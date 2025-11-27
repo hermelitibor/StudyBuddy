@@ -46,6 +46,16 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // Token alapú inicializálás (oldal frissítéskor)
+    initializeAuth: (state, action) => {
+      if (action.payload) {
+        state.isAuthenticated = true;
+        state.user = action.payload;
+      } else {
+        state.isAuthenticated = false;
+        state.user = null;
+      }
+    },
   },
 });
 
@@ -56,6 +66,7 @@ export const {
   registerSuccess,
   logout,
   clearError,
+  initializeAuth,
 } = authSlice.actions;
 
 export default authSlice.reducer;

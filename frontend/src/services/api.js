@@ -1,19 +1,20 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 const USE_MOCK = true; // Mock API kapcsoló
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Interceptor a tokennél
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,18 +28,27 @@ const mockAuthService = {
   register: async (email, password, name, major) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (email === 'already@elte.hu') {
-          reject('Ez az email már regisztrálva van');
+        if (
+          email === "already@elte.hu" ||
+          email === "already@student.elte.hu"
+        ) {
+          reject("Ez az email már regisztrálva van");
         } else {
-          resolve({
-            token: 'mock_token_' + Date.now(),
-            user: {
-              id: Math.random(),
-              name,
-              email,
-              major,
-            },
-          });
+          const token = "mock_token_" + Date.now();
+          const user = {
+            id: Math.random(),
+            name,
+            email,
+            major,
+          };
+          const response = {
+            token,
+            user,
+          };
+          // Token és user adatok mentése localStorage-ba
+          localStorage.setItem("authToken", token);
+          localStorage.setItem("authUser", JSON.stringify(user));
+          resolve(response);
         }
       }, 1500); // Szimulál 1.5 mp API késleltetést
     });
@@ -47,27 +57,37 @@ const mockAuthService = {
   login: async (email, password) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (password !== 'password123') {
-          reject('Hibás jelszó!');
-        } else if (!email.endsWith('@elte.hu')) {
-          reject('Nincs ilyen ELTE email cím');
+        if (password !== "password123") {
+          reject("Hibás jelszó!");
+        } else if (
+          !email.endsWith("@elte.hu") &&
+          !email.endsWith("@student.elte.hu")
+        ) {
+          reject("Nincs ilyen ELTE email cím");
         } else {
-          resolve({
-            token: 'mock_token_' + Date.now(),
-            user: {
-              id: 1,
-              name: 'Teszt Felhasználó',
-              email,
-              major: 'Informatika',
-            },
-          });
+          const token = "mock_token_" + Date.now();
+          const user = {
+            id: 1,
+            name: "Teszt Felhasználó",
+            email,
+            major: "Informatika",
+          };
+          const response = {
+            token,
+            user,
+          };
+          // Token és user adatok mentése localStorage-ba
+          localStorage.setItem("authToken", token);
+          localStorage.setItem("authUser", JSON.stringify(user));
+          resolve(response);
         }
       }, 1500);
     });
   },
 
   logout: () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
   },
 };
 
@@ -75,38 +95,39 @@ const mockAuthService = {
 const realAuthService = {
   register: async (email, password, name, major) => {
     try {
-      const response = await api.post('/api/auth/register', {
+      const response = await api.post("/api/auth/register", {
         email,
         password,
         name,
         major,
       });
       if (response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem("authToken", response.data.token);
       }
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Regisztráció sikertelen';
+      throw error.response?.data?.message || "Regisztráció sikertelen";
     }
   },
 
   login: async (email, password) => {
     try {
-      const response = await api.post('/api/auth/login', {
+      const response = await api.post("/api/auth/login", {
         email,
         password,
       });
       if (response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem("authToken", response.data.token);
       }
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Bejelentkezés sikertelen';
+      throw error.response?.data?.message || "Bejelentkezés sikertelen";
     }
   },
 
   logout: () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
   },
 };
 
