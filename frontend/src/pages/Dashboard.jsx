@@ -16,9 +16,15 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Card,
+  CardContent,
+  CircularProgress,
+  Alert,
+  IconButton,
 } from "@mui/material";
+import { Add as AddIcon, Logout as LogoutIcon } from "@mui/icons-material";
 import { logout } from "../redux/slices/authSlice";
-import { authService } from "../services/api";
+import { authService, groupService } from "../services/api";
 import "./Dashboard.css";
 import logo from "../assets/logo_studyBuddy.png";
 
@@ -51,6 +57,10 @@ const Dashboard = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [joiningGroupId, setJoiningGroupId] = useState(null);
 
   const handleLogout = () => {
     authService.logout();
@@ -67,14 +77,57 @@ const Dashboard = () => {
     setSelectedSubject("");
   };
 
-  const handleJoinGroup = () => {
+  const handleJoinGroup = async () => {
     if (!selectedSubject) {
-      // TODO: Hibaüzenet megjelenítése
+      setError("Válassz ki egy tárgyat!");
       return;
     }
-    // TODO: Csoport keresése és csatlakozás a kiválasztott tárgyhoz
-    console.log("Csatlakozás tárgyhoz:", selectedSubject);
-    handleCloseJoinGroupModal();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await groupService.searchGroups(selectedSubject);
+      // A response tartalmazza a recommended_group és all_groups mezőket
+      const allGroups = [];
+      if (response.recommended_group) {
+        allGroups.push(response.recommended_group);
+      }
+      if (response.all_groups && Array.isArray(response.all_groups)) {
+        allGroups.push(...response.all_groups);
+      }
+      setGroups(allGroups);
+      handleCloseJoinGroupModal();
+    } catch (err) {
+      setError(err.message || "Hiba történt a csoportok keresése során");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinToGroup = async (groupId) => {
+    setJoiningGroupId(groupId);
+    setError(null);
+
+    try {
+      await groupService.joinGroup(groupId);
+      // Frissítjük a csoportok listáját, hogy lássuk az új tag számot
+      if (selectedSubject) {
+        const response = await groupService.searchGroups(selectedSubject);
+        const allGroups = [];
+        if (response.recommended_group) {
+          allGroups.push(response.recommended_group);
+        }
+        if (response.all_groups && Array.isArray(response.all_groups)) {
+          allGroups.push(...response.all_groups);
+        }
+        setGroups(allGroups);
+      }
+    } catch (err) {
+      setError(err.message || "Hiba történt a csatlakozás során");
+    } finally {
+      setJoiningGroupId(null);
+    }
   };
 
   const getInitials = (name) => {
@@ -143,16 +196,120 @@ const Dashboard = () => {
           >
             {getInitials(user?.name)}
           </Avatar>
-          <button onClick={handleLogout} className="btn btn-logout">
+          <Button
+            onClick={handleLogout}
+            variant="contained"
+            startIcon={<LogoutIcon />}
+            sx={{
+              bgcolor: "#ff6b6b",
+              color: "white",
+              "&:hover": {
+                bgcolor: "#ff5252",
+              },
+            }}
+          >
             Kijelentkezés
-          </button>
+          </Button>
         </div>
       </nav>
 
       <main className="dashboard-content">
-        <h2>Üdvözöllek a Study Buddy-ban!</h2>
-        <p>Szak: {user?.major}</p>
-        <p>Email: {user?.email}</p>
+        {groups.length === 0 && !loading && (
+          <>
+            <h2>Üdvözöllek a Study Buddy-ban!</h2>
+            <p>Szak: {user?.major}</p>
+            <p>Email: {user?.email}</p>
+          </>
+        )}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {loading && (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="200px"
+          >
+            <CircularProgress />
+          </Box>
+        )}
+
+        {groups.length > 0 && (
+          <Box>
+            <Typography variant="h4" sx={{ mb: 3 }}>
+              Elérhető csoportok - {selectedSubject}
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                },
+                gap: 2,
+              }}
+            >
+              {groups.map((group) => (
+                <Card key={group.id} sx={{ position: "relative" }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {group.name}
+                    </Typography>
+                    {group.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {group.description}
+                      </Typography>
+                    )}
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        {group.member_count || 0} / 6 fő
+                      </Typography>
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleJoinToGroup(group.id)}
+                        disabled={
+                          (group.member_count || 0) >= 6 ||
+                          joiningGroupId === group.id
+                        }
+                        sx={{
+                          bgcolor: "primary.main",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: "primary.dark",
+                          },
+                          "&.Mui-disabled": {
+                            bgcolor: "grey.300",
+                            color: "grey.500",
+                          },
+                        }}
+                      >
+                        {joiningGroupId === group.id ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : (
+                          <AddIcon />
+                        )}
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </Box>
+        )}
       </main>
 
       {/* Profil Modal */}

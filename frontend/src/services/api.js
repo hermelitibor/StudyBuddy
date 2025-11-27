@@ -140,4 +140,29 @@ const realAuthService = {
 // Válassz: mock vagy real
 export const authService = USE_MOCK ? mockAuthService : realAuthService;
 
+// Group Service
+export const groupService = {
+  searchGroups: async (subject) => {
+    try {
+      const response = await api.get(`/groups/search`, {
+        params: { q: subject },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || "Csoportok keresése sikertelen";
+    }
+  },
+
+  joinGroup: async (groupId) => {
+    try {
+      const response = await api.post("/groups/join", {
+        group_id: groupId,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || "Csatlakozás sikertelen";
+    }
+  },
+};
+
 export default api;
