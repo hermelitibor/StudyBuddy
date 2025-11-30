@@ -97,12 +97,23 @@ const Dashboard = () => {
       const response = await groupService.searchGroups(selectedSubject);
       // A response tartalmazza a recommended_group és all_groups mezőket
       const allGroups = [];
-      if (response.recommended_group) {
+      const seenIds = new Set();
+      
+      // Először az all_groups-ot adjuk hozzá
+      if (response.all_groups && Array.isArray(response.all_groups)) {
+        response.all_groups.forEach((group) => {
+          if (!seenIds.has(group.id)) {
+            allGroups.push(group);
+            seenIds.add(group.id);
+          }
+        });
+      }
+      
+      // Ha van recommended_group és még nincs benne, akkor hozzáadjuk
+      if (response.recommended_group && !seenIds.has(response.recommended_group.id)) {
         allGroups.push(response.recommended_group);
       }
-      if (response.all_groups && Array.isArray(response.all_groups)) {
-        allGroups.push(...response.all_groups);
-      }
+      
       setGroups(allGroups);
       handleCloseJoinGroupModal();
     } catch (err) {
@@ -122,12 +133,23 @@ const Dashboard = () => {
       if (selectedSubject) {
         const response = await groupService.searchGroups(selectedSubject);
         const allGroups = [];
-        if (response.recommended_group) {
+        const seenIds = new Set();
+        
+        // Először az all_groups-ot adjuk hozzá
+        if (response.all_groups && Array.isArray(response.all_groups)) {
+          response.all_groups.forEach((group) => {
+            if (!seenIds.has(group.id)) {
+              allGroups.push(group);
+              seenIds.add(group.id);
+            }
+          });
+        }
+        
+        // Ha van recommended_group és még nincs benne, akkor hozzáadjuk
+        if (response.recommended_group && !seenIds.has(response.recommended_group.id)) {
           allGroups.push(response.recommended_group);
         }
-        if (response.all_groups && Array.isArray(response.all_groups)) {
-          allGroups.push(...response.all_groups);
-        }
+        
         setGroups(allGroups);
       }
     } catch (err) {
