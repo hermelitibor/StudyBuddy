@@ -9,14 +9,18 @@ const api = axios.create({
   },
 });
 
+// ✅ HELYBEN DEFINIÁLT TOKEN HELPER
+const getAuthToken = () => localStorage.getItem("authToken");
+
 const authService = {
-  register: async (email, password, name, major) => {
+  register: async (email, password, name, major, hobbies) => {
     try {
       const response = await api.post("/register", {
         email,
         password,
         name,
         major,
+        hobbies,
       });
       
       if (response.data.token) {
@@ -46,9 +50,10 @@ const authService = {
     }
   },
 
+
   logout: () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser");
+    localStorage.clear();  // ← MINDEN törlése!
+    window.dispatchEvent(new Event('storage'));  // ← Redux értesítés
   },
 
   getUser: () => {
@@ -61,4 +66,49 @@ const authService = {
   },
 };
 
+
+// GROUP SERVICE
+const groupService = {
+  searchGroups: async (subject) => {
+    const token = getAuthToken();
+    const response = await api.get(`/groups/search?q=${encodeURIComponent(subject)}`, {
+      headers: { 
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  },
+
+  joinGroup: async (groupId) => {
+    const token = getAuthToken();
+    const response = await api.post("/groups/join", 
+      { group_id: groupId },
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  },
+
+  myGroups: async () => {
+    const token = getAuthToken();
+    const response = await api.get("/groups/my-groups", {
+      headers: { 
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  },
+
+  getGroupMembers: async (groupId) => {
+    const token = getAuthToken();
+    // Backend route hiányzik még: GET /groups/{id}/members
+    return [];
+  }
+};
+
+
+export { authService, groupService };
 export default authService;

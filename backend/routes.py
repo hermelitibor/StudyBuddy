@@ -35,8 +35,10 @@ def verify_jwt_token(token):
 
 def register_routes(app):
 
-    @app.route("/register", methods=["POST"])
+    @app.route("/register", methods=["POST","OPTIONS"])
     def register():
+        if request.method == "OPTIONS":
+            return "", 200
         data = request.get_json()
         if not data:
             return jsonify({
@@ -47,9 +49,11 @@ def register_routes(app):
 
         email = data.get("email")
         password = data.get("password")
-        major = data.get("major")  # <-- EZ LETT A NEVE
-        bio = data.get("bio")      # <-- EZ LETT A NEVE
-        avatar_url = data.get("avatar_url")  # opcionális
+        name = data.get("name")
+        major = data.get("major")  
+        hobbies = data.get("hobbies", [])
+        hobbies_str = ",".join(hobbies) if isinstance(hobbies, list) else str(hobbies)
+        avatar_url = data.get("avatar_url") 
 
         if not re.match(ELTE_EMAIL_REGEX, email):
             return jsonify({"message": "Csak ELTE-s email használható!"}), 400
@@ -62,11 +66,14 @@ def register_routes(app):
 
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode()
 
+        #bio_value = ",".join(interests) if isinstance(interests, list) else interests
+        
         new_user = User(
             email=email,
             password_hash=password_hash,
             major=major,
-            bio=bio,
+            name=name,
+            hobbies=hobbies_str,
             avatar_url=avatar_url
         )
 
@@ -77,17 +84,19 @@ def register_routes(app):
         "user": {
             "id": new_user.id,
             "email": new_user.email,
-            "name": data.get("name"),
+            "name": new_user.name,
             "major": new_user.major,
-            "bio": new_user.bio,
+            "hobbies": new_user.hobbies,
             "avatar_url": new_user.avatar_url
         },
         "token": create_jwt_token(new_user.id),
         "message": "Sikeres regisztráció!"
     }), 201
 
-    @app.route("/login", methods=["POST"])
+    @app.route("/login", methods=["POST", "OPTIONS"])
     def login():
+        if request.method == "OPTIONS":
+            return "", 200
         data = request.json
         email = data.get("email")
         password = data.get("password")
@@ -102,7 +111,17 @@ def register_routes(app):
 
         token = create_jwt_token(user.id)
 
-        return jsonify({"message": "Sikeres bejelentkezés!", "token": token}), 200
+        return jsonify({
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "major": user.major,
+                "hobbies": user.hobbies
+            },
+            "message": "Sikeres bejelentkezés!", 
+            "token": token,
+        }), 200
 
     @app.route("/profile", methods=["GET"])
     def profile():
@@ -126,7 +145,8 @@ def register_routes(app):
         return jsonify({
             "email": user.email,
             "major": user.major,
-            "bio": user.bio,
+            "name": user.name,
+            "hobbies": user.hobbies,
             "avatar_url": user.avatar_url
         })
 
@@ -156,7 +176,7 @@ def register_routes(app):
         # 1) A tárgyhoz tartozó csoportok
         groups = Group.query.filter(Group.subject.ilike(f"%{subject}%")).all()
 
-        user_interests = set((user.bio or "").split(","))
+        user_interests = set((user.hobbies or "").split(","))
 
         zero_member_group = None
         group_list = []
@@ -171,8 +191,8 @@ def register_routes(app):
             same_interest_count = 0
             for m in members:
                 u = User.query.get(m.user_id)
-                if u and u.bio:
-                    if user_interests.intersection(set(u.bio.split(","))):
+                if u and u.hobbies:
+                    if user_interests.intersection(set(u.hobbies.split(","))):
                         same_interest_count += 1
 
             if member_count == 0 and zero_member_group is None:
@@ -188,8 +208,15 @@ def register_routes(app):
                 "subject": g.subject,
                 "description": g.description,
                 "member_count": member_count,
-                "same_interest_members": same_interest_count
+                "same_interest_members": same_interest_count,
+                "is_member": False
             })
+
+            existing_member = GroupMember.query.filter_by(
+                group_id=g.id,
+                user_id=user_id
+            ).first()
+            group_list[-1]["is_member"] = existing_member is not None
 
         # 2) Ha nincs egyetlen csoport sem: automatikusan létrehozzuk
         if not groups:
@@ -209,7 +236,8 @@ def register_routes(app):
                     "subject": new_group.subject,
                     "description": new_group.description,
                     "member_count": 0,
-                    "same_interest_members": 0
+                    "same_interest_members": 0,
+                    "is_member": False  # ← EZ HIÁNYZIK!
                 },
                 "all_groups": []
             })
@@ -233,8 +261,18 @@ def register_routes(app):
                 "subject": zero_member_group.subject,
                 "description": zero_member_group.description,
                 "member_count": 0,
-                "same_interest_members": 0
+                "same_interest_members": 0,
+                "is_member": False
             })
+
+            
+            existing_member = GroupMember.query.filter_by(
+                group_id=zero_member_group.id,  # zero_member_group.id!
+                user_id=user_id
+            ).first()
+
+            if existing_member:
+                group_list[-1]["is_member"] = True  
 
         # 4) Ha nincs olyan csoport, amelyikben lenne közös érdeklődés -> ajánlott legyen az üres
         if best_interest_count == 0 or best_group is None:
@@ -244,7 +282,8 @@ def register_routes(app):
                 "subject": zero_member_group.subject,
                 "description": zero_member_group.description,
                 "member_count": 0,
-                "same_interest_members": 0
+                "same_interest_members": 0,
+                "is_member": False
             }
         else:
             # külön kiszámoljuk, hogy mennyi same_interest volt abban a csoportban
@@ -254,8 +293,17 @@ def register_routes(app):
                 "subject": best_group.subject,
                 "description": best_group.description,
                 "member_count": GroupMember.query.filter_by(group_id=best_group.id).count(),
-                "same_interest_members": best_interest_count
+                "same_interest_members": best_interest_count,
+                "is_member": False
             }
+
+            existing_member = GroupMember.query.filter_by(
+                group_id=best_group.id,
+                user_id=user_id
+            ).first()
+
+            if existing_member:
+                recommended_group["is_member"] = True
 
         # 5) válasz
         return jsonify({
@@ -265,8 +313,22 @@ def register_routes(app):
 
             
 
-    @app.route("/groups/join", methods=["POST"])
+    @app.route("/groups/join", methods=["POST", "OPTIONS"])
     def join_group():
+        if request.method == "OPTIONS":
+            return "", 200
+    
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "Nincs JSON adat"}), 400
+        
+        group_id = data.get("group_id")
+    
+        if not group_id:
+            return jsonify({"error": "group_id szükséges"}), 400
+        
+
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             return jsonify({"error": "Hiányzó token"}), 401
@@ -281,8 +343,6 @@ def register_routes(app):
             return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
 
         user_id = decoded["user_id"]
-        data = request.json
-        group_id = data.get("group_id")
 
         if not group_id:
             return jsonify({"error": "group_id szükséges"}), 400

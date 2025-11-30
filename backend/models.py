@@ -11,8 +11,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True) 
     password_hash = db.Column(db.String(200), nullable=False)
     
-    major = db.Column(db.String(100), nullable=True) 
-    bio = db.Column(db.Text, nullable=True)
+    major = db.Column(db.String(100), nullable=True)
+    name = db.Column(db.String(100), nullable=True)  
+    hobbies = db.Column(db.Text, nullable=True)
     avatar_url = db.Column(db.String(255), nullable=True)
 
     is_active = db.Column(db.Boolean, default=True, nullable=False)
