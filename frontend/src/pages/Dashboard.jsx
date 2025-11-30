@@ -28,7 +28,8 @@ import {
   People as PeopleIcon,
 } from "@mui/icons-material";
 import { logout } from "../redux/slices/authSlice";
-import { authService, groupService } from "../services/api";
+import  authService  from "../services/api";
+import  groupService  from "../services/api";
 import "./Dashboard.css";
 import logo from "../assets/logo_studyBuddy.png";
 
@@ -241,7 +242,7 @@ const Dashboard = () => {
       <main className="dashboard-content">
         {groups.length === 0 && !loading && (
           <>
-            <h2>Üdvözöllek a Study Buddy-ban!</h2>
+            <h2>Üdvözöllek a Study Buddy-ban! Változtatás, Változtatás megint</h2>
             <p>Szak: {user?.major}</p>
             <p>Email: {user?.email}</p>
           </>

@@ -37,7 +37,13 @@ def register_routes(app):
 
     @app.route("/register", methods=["POST"])
     def register():
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "error": "Hibás JSON formátum",
+                "code": 400
+            }), 400
+            
 
         email = data.get("email")
         password = data.get("password")
@@ -46,13 +52,13 @@ def register_routes(app):
         avatar_url = data.get("avatar_url")  # opcionális
 
         if not re.match(ELTE_EMAIL_REGEX, email):
-            return jsonify({"error": "Csak ELTE-s email használható!"}), 400
+            return jsonify({"message": "Csak ELTE-s email használható!"}), 400
 
         if not major:
-            return jsonify({"error": "A szak megadása kötelező!"}), 400
+            return jsonify({"message": "A szak megadása kötelező!"}), 400
 
         if User.query.filter_by(email=email).first():
-            return jsonify({"error": "Ez az email már regisztrálva van!"}), 400
+            return jsonify({"message": "Ez az email már regisztrálva van!"}), 400
 
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode()
 
@@ -67,7 +73,18 @@ def register_routes(app):
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({"message": "Sikeres regisztráció!", "user_id": new_user.id}), 201
+        return jsonify({
+        "user": {
+            "id": new_user.id,
+            "email": new_user.email,
+            "name": data.get("name"),
+            "major": new_user.major,
+            "bio": new_user.bio,
+            "avatar_url": new_user.avatar_url
+        },
+        "token": create_jwt_token(new_user.id),
+        "message": "Sikeres regisztráció!"
+    }), 201
 
     @app.route("/login", methods=["POST"])
     def login():

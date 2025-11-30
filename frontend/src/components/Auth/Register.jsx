@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginStart, registerSuccess, loginFailure, clearError } from '../../redux/slices/authSlice';
-import { authService } from '../../services/api';
+import  authService  from '../../services/api';
 import './Auth.css';
 import logo from '../../assets/logo_studyBuddy.png';
 
@@ -166,7 +166,8 @@ export const Register = () => {
       dispatch(registerSuccess(response.user));
       navigate('/dashboard');
     } catch (err) {
-      dispatch(loginFailure(err));
+      const errorMessage = err.error || err.message || 'Regisztráció sikertelen!';
+      dispatch(loginFailure(errorMessage));
     }
   };
 

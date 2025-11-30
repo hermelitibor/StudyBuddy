@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginStart, loginSuccess, loginFailure, clearError } from '../../redux/slices/authSlice';
-import { authService } from '../../services/api';
+import  authService  from '../../services/api';
 import './Auth.css';
 import logo from '../../assets/logo_studyBuddy.png';
 
