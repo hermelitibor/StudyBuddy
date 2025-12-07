@@ -706,8 +706,8 @@ def register_routes(app):
             "comments": comments_json
         }), 200
 
-    @app.route("/comments/<int:comment_id>", methods=["DELETE"])
-    def delete_comment(comment_id):
+    @app.route("/comments/<int:comment_id>", methods=["PUT", "DELETE"])
+    def update_or_delete_comment(comment_id):
         ################### Auth check and case handling
         auth_header = request.headers.get("Authorization")
         if not auth_header:
@@ -728,14 +728,41 @@ def register_routes(app):
         if not comment or comment.deleted_at is not None:
             return jsonify({"error": "Komment nem található"}), 404
 
-        # Csak a komment szerzője törölheti
+        # Csak a komment szerzője módosíthatja vagy törölheti
         if comment.author_id != user_id:
-            return jsonify({"error": "Nincs jogosultságod a komment törléséhez"}), 403
+            return jsonify({"error": "Nincs jogosultságod a komment módosításához"}), 403
 
-        # Soft delete
-        comment.deleted_at = datetime.now(timezone.utc)
-        db.session.commit()
+        if request.method == "PUT":
+            # Szerkesztés
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "Nincs JSON adat"}), 400
 
-        return jsonify({
-            "message": "Komment sikeresen törölve"
-        }), 200
+            content = data.get("content")
+            if not content:
+                return jsonify({"error": "A comment content kötelező"}), 400
+
+            comment.comment = content
+            comment.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+            return jsonify({
+                "message": "Komment sikeresen frissítve",
+                "comment": {
+                    "id": comment.id,
+                    "content": comment.comment,
+                    "post_id": comment.post_id,
+                    "author_id": comment.author_id,
+                    "created_at": comment.created_at.isoformat() if comment.created_at else None,
+                    "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+                }
+            }), 200
+
+        elif request.method == "DELETE":
+            # Soft delete
+            comment.deleted_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+            return jsonify({
+                "message": "Komment sikeresen törölve"
+            }), 200

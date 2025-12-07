@@ -184,6 +184,20 @@ const forumService = {
     });
     return response.data;
   },
+
+  updateComment: async (commentId, content) => {
+    const token = getAuthToken();
+    const response = await api.put(
+      `/comments/${commentId}`,
+      { content },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data.comment;
+  },
 };
 
 export { authService, groupService, forumService };

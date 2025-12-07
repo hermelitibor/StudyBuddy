@@ -28,6 +28,7 @@ import {
   ExpandLess as ExpandLessIcon,
   People as PeopleIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import { groupService, forumService, authService } from "../services/api";
 import "./Dashboard.css";
@@ -58,6 +59,10 @@ const Forum = () => {
   const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
+  const [editCommentDialogOpen, setEditCommentDialogOpen] = useState(false);
+  const [commentToEdit, setCommentToEdit] = useState(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
+  const [updatingComment, setUpdatingComment] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     if (!groupId) return;
@@ -304,6 +309,52 @@ const Forum = () => {
   const cancelDeleteComment = () => {
     setDeleteCommentDialogOpen(false);
     setCommentToDelete(null);
+  };
+
+  const handleEditComment = (comment) => {
+    setCommentToEdit(comment);
+    setEditingCommentContent(comment.content);
+    setEditCommentDialogOpen(true);
+  };
+
+  const confirmEditComment = async () => {
+    if (!commentToEdit || !editingCommentContent.trim()) {
+      return;
+    }
+
+    setUpdatingComment(true);
+    setError(null);
+
+    try {
+      const updatedComment = await forumService.updateComment(
+        commentToEdit.id,
+        editingCommentContent
+      );
+      setEditCommentDialogOpen(false);
+      // Frissítjük a kommenteket a poszthoz
+      const updatedComments = comments[commentToEdit.post_id] || [];
+      setComments({
+        ...comments,
+        [commentToEdit.post_id]: updatedComments.map((c) =>
+          c.id === commentToEdit.id ? updatedComment : c
+        ),
+      });
+      setCommentToEdit(null);
+      setEditingCommentContent("");
+    } catch (err) {
+      console.error("Komment szerkesztési hiba:", err);
+      setError(
+        err.response?.data?.error || "Hiba történt a komment szerkesztése során"
+      );
+    } finally {
+      setUpdatingComment(false);
+    }
+  };
+
+  const cancelEditComment = () => {
+    setEditCommentDialogOpen(false);
+    setCommentToEdit(null);
+    setEditingCommentContent("");
   };
 
   const getCurrentUserId = () => {
@@ -665,27 +716,49 @@ const Forum = () => {
                                         </Box>
                                         {comment.author_id ===
                                           getCurrentUserId() && (
-                                          <IconButton
-                                            onClick={() =>
-                                              handleDeleteComment(
-                                                comment,
-                                                post.id
-                                              )
-                                            }
-                                            sx={{
-                                              color: "#d32f2f",
-                                              "&:hover": {
-                                                backgroundColor:
-                                                  "rgba(211, 47, 47, 0.1)",
-                                                transform: "scale(1.1)",
-                                              },
-                                              transition: "all 0.2s",
-                                            }}
-                                            title="Komment törlése"
-                                            size="small"
+                                          <Box
+                                            sx={{ display: "flex", gap: 0.5 }}
                                           >
-                                            <DeleteIcon fontSize="small" />
-                                          </IconButton>
+                                            <IconButton
+                                              onClick={() =>
+                                                handleEditComment(comment)
+                                              }
+                                              sx={{
+                                                color: "#667eea",
+                                                "&:hover": {
+                                                  backgroundColor:
+                                                    "rgba(102, 126, 234, 0.1)",
+                                                  transform: "scale(1.1)",
+                                                },
+                                                transition: "all 0.2s",
+                                              }}
+                                              title="Komment szerkesztése"
+                                              size="small"
+                                            >
+                                              <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                              onClick={() =>
+                                                handleDeleteComment(
+                                                  comment,
+                                                  post.id
+                                                )
+                                              }
+                                              sx={{
+                                                color: "#d32f2f",
+                                                "&:hover": {
+                                                  backgroundColor:
+                                                    "rgba(211, 47, 47, 0.1)",
+                                                  transform: "scale(1.1)",
+                                                },
+                                                transition: "all 0.2s",
+                                              }}
+                                              title="Komment törlése"
+                                              size="small"
+                                            >
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          </Box>
                                         )}
                                       </Box>
                                       <Typography
@@ -1087,6 +1160,73 @@ const Forum = () => {
               <CircularProgress size={20} color="inherit" />
             ) : (
               "Törlés"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Comment Dialog */}
+      <Dialog
+        open={editCommentDialogOpen}
+        onClose={cancelEditComment}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "24px",
+            boxShadow: "0 8px 32px rgba(102, 126, 234, 0.2)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
+            fontWeight: 600,
+            borderRadius: "24px 24px 0 0",
+          }}
+        >
+          Komment szerkesztése
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={6}
+            label="Komment tartalma"
+            value={editingCommentContent}
+            onChange={(e) => setEditingCommentContent(e.target.value)}
+            required
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={cancelEditComment}
+            disabled={updatingComment}
+            sx={{ color: "#666" }}
+          >
+            Mégse
+          </Button>
+          <Button
+            onClick={confirmEditComment}
+            variant="contained"
+            disabled={updatingComment || !editingCommentContent.trim()}
+            sx={{
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)",
+              },
+            }}
+          >
+            {updatingComment ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Mentés"
             )}
           </Button>
         </DialogActions>
