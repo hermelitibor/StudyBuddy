@@ -1,11 +1,10 @@
 from flask import request, jsonify
-from models import db, User
 import re
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
 from config import Config
-from models import db, User, Group, GroupMember
+from models import db, User, Group, GroupMember, Post, Comment
 
 
 # Email minta
@@ -463,4 +462,217 @@ def register_routes(app):
         return jsonify({
             "group_id": group_id,
             "members": members
+        }), 200
+        
+        
+        
+    @app.route("/groups/<int:group_id>/posts", methods=["POST", "OPTIONS"])
+    def create_post(group_id):
+        if request.method == "OPTIONS":
+            return "", 200
+
+        ################ Auth checks and case handling ##############################
+        
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except Exception:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({"error": "Csoport nem található"}), 404
+
+
+        membership = GroupMember.query.filter_by(
+            user_id=user_id, group_id=group_id
+        ).first()
+        if not membership:
+            return jsonify({"error": "Nem vagy tagja a csoportnak"}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Nincs JSON adat"}), 400
+        
+        #####################################################################
+
+        title = data.get("title")
+        content = data.get("content")
+
+        if not title or not content:
+            return jsonify({"error": "title és content kötelező"}), 400
+
+        new_post = Post(
+            title=title,
+            content=content,
+            group_id=group_id,
+            author_id=user_id,
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            updated_at=datetime.datetime.now(datetime.timezone.utc)
+        )
+
+        db.session.add(new_post)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Poszt sikeresen létrehozva",
+            "post": {
+                "id": new_post.id,
+                "title": new_post.title,
+                "content": new_post.content,
+                "group_id": new_post.group_id,
+                "author_id": new_post.author_id,
+                "created_at": new_post.created_at.isoformat(),
+                "updated_at": new_post.updated_at.isoformat()
+            }
+        }), 201
+
+    @app.route("/groups/<int:group_id>/posts", methods=["GET"])
+    def list_posts(group_id):
+        
+        ###### Necessery checks############
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except Exception:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({"error": "Csoport nem található"}), 404
+
+        ##############################################x
+        posts = (
+            Post.query
+            .filter_by(group_id=group_id, deleted_at=None)
+            .order_by(Post.created_at.desc())
+            .all()
+        )
+
+        posts_json = []
+        for p in posts:
+            posts_json.append({
+                "id": p.id,
+                "title": p.title,
+                "content": p.content,
+                "group_id": p.group_id,
+                "author_id": p.author_id,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+            })
+
+        return jsonify({
+            "group_id": group_id,
+            "posts": posts_json
+        }), 200
+
+
+
+    @app.route("/posts/<int:post_id>/comments", methods=["POST", "OPTIONS"])
+    def create_comment(post_id):
+        if request.method == "OPTIONS":
+            return "", 200
+
+        ################### Auth check and case handling
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except Exception:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+
+        
+        post = Post.query.get(post_id)
+        if not post or post.deleted_at is not None:
+            return jsonify({"error": "Poszt nem található"}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Nincs JSON adat"}), 400
+
+        content = data.get("content")
+        if not content:
+            return jsonify({"error": "A comment content kötelező"}), 400
+        
+        
+        ################################################################
+
+        new_comment = Comment(
+            content=content,
+            post_id=post_id,
+            author_id=user_id,
+            created_at=datetime.now(datetime.timezone.utc)
+        )
+
+        db.session.add(new_comment)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Komment sikeresen létrehozva",
+            "comment": {
+                "id": new_comment.id,
+                "content": new_comment.content,
+                "post_id": new_comment.post_id,
+                "author_id": new_comment.author_id,
+                "created_at": new_comment.created_at.isoformat()
+            }
+        }), 201
+
+    @app.route("/posts/<int:post_id>/comments", methods=["GET"])
+    def list_comments(post_id):
+        
+        
+        ################# Case handling###############################xx
+
+        post = Post.query.get(post_id)
+        if not post or post.deleted_at is not None:
+            return jsonify({"error": "Poszt nem található"}), 404
+        
+        #############################################
+
+        comments = (
+            Comment.query
+            .filter_by(post_id=post_id, deleted_at=None)
+            .order_by(Comment.created_at.asc())
+            .all()
+        )
+
+        comments_json = []
+        for c in comments:
+            comments_json.append({
+                "id": c.id,
+                "content": c.content,
+                "post_id": c.post_id,
+                "author_id": c.author_id,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            })
+
+        return jsonify({
+            "post_id": post_id,
+            "comments": comments_json
         }), 200
