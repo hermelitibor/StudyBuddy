@@ -705,3 +705,37 @@ def register_routes(app):
             "post_id": post_id,
             "comments": comments_json
         }), 200
+
+    @app.route("/comments/<int:comment_id>", methods=["DELETE"])
+    def delete_comment(comment_id):
+        ################### Auth check and case handling
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except Exception:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+
+        comment = Comment.query.get(comment_id)
+        if not comment or comment.deleted_at is not None:
+            return jsonify({"error": "Komment nem található"}), 404
+
+        # Csak a komment szerzője törölheti
+        if comment.author_id != user_id:
+            return jsonify({"error": "Nincs jogosultságod a komment törléséhez"}), 403
+
+        # Soft delete
+        comment.deleted_at = datetime.now(timezone.utc)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Komment sikeresen törölve"
+        }), 200

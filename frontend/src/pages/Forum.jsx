@@ -55,6 +55,9 @@ const Forum = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const [deletingPost, setDeletingPost] = useState(false);
+  const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [deletingComment, setDeletingComment] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     if (!groupId) return;
@@ -263,6 +266,44 @@ const Forum = () => {
   const cancelDeletePost = () => {
     setDeleteDialogOpen(false);
     setPostToDelete(null);
+  };
+
+  const handleDeleteComment = (comment, postId) => {
+    setCommentToDelete({ ...comment, postId });
+    setDeleteCommentDialogOpen(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
+
+    setDeletingComment(true);
+    setError(null);
+
+    try {
+      await forumService.deleteComment(commentToDelete.id);
+      setDeleteCommentDialogOpen(false);
+      // Frissítjük a kommenteket a poszthoz
+      const updatedComments = comments[commentToDelete.postId] || [];
+      setComments({
+        ...comments,
+        [commentToDelete.postId]: updatedComments.filter(
+          (c) => c.id !== commentToDelete.id
+        ),
+      });
+      setCommentToDelete(null);
+    } catch (err) {
+      console.error("Komment törlési hiba:", err);
+      setError(
+        err.response?.data?.error || "Hiba történt a komment törlése során"
+      );
+    } finally {
+      setDeletingComment(false);
+    }
+  };
+
+  const cancelDeleteComment = () => {
+    setDeleteCommentDialogOpen(false);
+    setCommentToDelete(null);
   };
 
   const getCurrentUserId = () => {
@@ -579,38 +620,73 @@ const Forum = () => {
                                       <Box
                                         sx={{
                                           display: "flex",
-                                          alignItems: "center",
-                                          gap: 1.5,
+                                          justifyContent: "space-between",
+                                          alignItems: "flex-start",
                                           mb: 1.5,
                                         }}
                                       >
-                                        <Avatar
+                                        <Box
                                           sx={{
-                                            width: 40,
-                                            height: 40,
-                                            background:
-                                              "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                            color: "white",
-                                            fontSize: "0.9rem",
-                                            fontWeight: 600,
-                                            boxShadow:
-                                              "0 2px 8px rgba(102, 126, 234, 0.3)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            flex: 1,
                                           }}
                                         >
-                                          {getAuthorInitials(comment.author_id)}
-                                        </Avatar>
-                                        <Box>
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
+                                          <Avatar
                                             sx={{
-                                              display: "block",
-                                              fontSize: "0.75rem",
+                                              width: 40,
+                                              height: 40,
+                                              background:
+                                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                              color: "white",
+                                              fontSize: "0.9rem",
+                                              fontWeight: 600,
+                                              boxShadow:
+                                                "0 2px 8px rgba(102, 126, 234, 0.3)",
                                             }}
                                           >
-                                            {formatDate(comment.created_at)}
-                                          </Typography>
+                                            {getAuthorInitials(
+                                              comment.author_id
+                                            )}
+                                          </Avatar>
+                                          <Box>
+                                            <Typography
+                                              variant="caption"
+                                              color="text.secondary"
+                                              sx={{
+                                                display: "block",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            >
+                                              {formatDate(comment.created_at)}
+                                            </Typography>
+                                          </Box>
                                         </Box>
+                                        {comment.author_id ===
+                                          getCurrentUserId() && (
+                                          <IconButton
+                                            onClick={() =>
+                                              handleDeleteComment(
+                                                comment,
+                                                post.id
+                                              )
+                                            }
+                                            sx={{
+                                              color: "#d32f2f",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "rgba(211, 47, 47, 0.1)",
+                                                transform: "scale(1.1)",
+                                              },
+                                              transition: "all 0.2s",
+                                            }}
+                                            title="Komment törlése"
+                                            size="small"
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </IconButton>
+                                        )}
                                       </Box>
                                       <Typography
                                         variant="body2"
@@ -934,6 +1010,80 @@ const Forum = () => {
             }}
           >
             {deletingPost ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Törlés"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <Dialog
+        open={deleteCommentDialogOpen}
+        onClose={cancelDeleteComment}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "24px",
+            boxShadow: "0 8px 32px rgba(211, 47, 47, 0.2)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(135deg, #d32f2f 0%, #c62828 100%)",
+            color: "white",
+            borderRadius: "24px 24px 0 0",
+            fontWeight: 600,
+          }}
+        >
+          Komment törlése
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Biztosan törölni szeretnéd ezt a kommentet?
+          </Typography>
+          {commentToDelete && (
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: "12px",
+                backgroundColor: "rgba(211, 47, 47, 0.05)",
+                border: "1px solid rgba(211, 47, 47, 0.2)",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {commentToDelete.content.substring(0, 100)}
+                {commentToDelete.content.length > 100 ? "..." : ""}
+              </Typography>
+            </Box>
+          )}
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            Ez a művelet nem visszavonható!
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={cancelDeleteComment}
+            disabled={deletingComment}
+            sx={{ color: "#666" }}
+          >
+            Mégse
+          </Button>
+          <Button
+            onClick={confirmDeleteComment}
+            variant="contained"
+            disabled={deletingComment}
+            sx={{
+              background: "linear-gradient(135deg, #d32f2f 0%, #c62828 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #b71c1c 0%, #a01515 100%)",
+              },
+            }}
+          >
+            {deletingComment ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
               "Törlés"
