@@ -623,7 +623,7 @@ def register_routes(app):
         ################################################################
 
         new_comment = Comment(
-            content=content,
+            comment=content,
             post_id=post_id,
             author_id=user_id,
             created_at=datetime.now(datetime.timezone.utc)
@@ -636,7 +636,7 @@ def register_routes(app):
             "message": "Komment sikeresen létrehozva",
             "comment": {
                 "id": new_comment.id,
-                "content": new_comment.content,
+                "content": new_comment.comment,
                 "post_id": new_comment.post_id,
                 "author_id": new_comment.author_id,
                 "created_at": new_comment.created_at.isoformat()
@@ -666,7 +666,7 @@ def register_routes(app):
         for c in comments:
             comments_json.append({
                 "id": c.id,
-                "content": c.content,
+                "content": c.comment,
                 "post_id": c.post_id,
                 "author_id": c.author_id,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
