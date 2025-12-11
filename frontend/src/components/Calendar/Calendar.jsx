@@ -19,6 +19,8 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   Close as CloseIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from "@mui/icons-material";
 import { eventService } from "../../services/api";
 import { authService } from "../../services/api";
@@ -305,14 +307,36 @@ const Calendar = ({ open, onClose, groupId }) => {
                   mb: 3,
                 }}
               >
-                <IconButton onClick={previousMonth}>
-                  <Typography variant="h6">‹</Typography>
+                <IconButton 
+                  onClick={previousMonth}
+                  sx={{
+                    color: "#667eea",
+                    "&:hover": {
+                      backgroundColor: "rgba(102, 126, 234, 0.1)",
+                      transform: "scale(1.1)",
+                    },
+                    transition: "all 0.2s",
+                  }}
+                  size="large"
+                >
+                  <ChevronLeftIcon sx={{ fontSize: "2rem" }} />
                 </IconButton>
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
                   {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </Typography>
-                <IconButton onClick={nextMonth}>
-                  <Typography variant="h6">›</Typography>
+                <IconButton 
+                  onClick={nextMonth}
+                  sx={{
+                    color: "#667eea",
+                    "&:hover": {
+                      backgroundColor: "rgba(102, 126, 234, 0.1)",
+                      transform: "scale(1.1)",
+                    },
+                    transition: "all 0.2s",
+                  }}
+                  size="large"
+                >
+                  <ChevronRightIcon sx={{ fontSize: "2rem" }} />
                 </IconButton>
               </Box>
 
