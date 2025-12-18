@@ -76,6 +76,11 @@ const Dashboard = () => {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [toastNotificationsEnabled, setToastNotificationsEnabled] = useState(() => {
+    // Alapértelmezetten bekapcsolva, kivéve ha korábban kikapcsolták
+    const saved = localStorage.getItem("toastNotificationsEnabled");
+    return saved === null ? true : saved === "true";
+  });
 
   useEffect(() => {
     const fetchMyGroups = async () => {
@@ -120,13 +125,13 @@ const Dashboard = () => {
               }
             }
 
-            // Ha van új poszt, toast üzenetet mutatunk
-            if (newPostsGroups.length > 0) {
-              const messages = newPostsGroups.map(
-                (item) =>
-                  `${item.count} új poszt a "${item.groupName}" csoportban`
+            // Ha van új poszt ÉS a toast értesítések be vannak kapcsolva, toast üzenetet mutatunk
+            if (newPostsGroups.length > 0 && toastNotificationsEnabled) {
+              // Csak az első csoportot mutatjuk egyszerre
+              const firstGroup = newPostsGroups[0];
+              setToastMessage(
+                `${firstGroup.count} új poszt a "${firstGroup.groupName}" csoportban`
               );
-              setToastMessage(messages.join(", "));
               setToastOpen(true);
             }
           }
@@ -139,12 +144,12 @@ const Dashboard = () => {
     };
 
     fetchUnreadCounts();
-
-    // Polling: 30 másodpercenként ellenőrzi az új posztokat
-    const interval = setInterval(fetchUnreadCounts, 30000);
-
+    
+    // Real-time polling: 5 másodpercenként ellenőrzi az új posztokat
+    const interval = setInterval(fetchUnreadCounts, 5000);
+    
     return () => clearInterval(interval);
-  }, [activeTab, myGroups]);
+  }, [activeTab, myGroups, toastNotificationsEnabled]);
 
   useEffect(() => {
     if (activeTab === "my") {
@@ -193,12 +198,13 @@ const Dashboard = () => {
                 }
               }
 
-              if (newPostsGroups.length > 0) {
-                const messages = newPostsGroups.map(
-                  (item) =>
-                    `${item.count} új poszt a "${item.groupName}" csoportban`
+              // Csak akkor mutatunk toast üzenetet, ha be van kapcsolva ÉS van új poszt
+              if (newPostsGroups.length > 0 && toastNotificationsEnabled) {
+                // Csak az első csoportot mutatjuk egyszerre
+                const firstGroup = newPostsGroups[0];
+                setToastMessage(
+                  `${firstGroup.count} új poszt a "${firstGroup.groupName}" csoportban`
                 );
-                setToastMessage(messages.join(", "));
                 setToastOpen(true);
               }
             }
@@ -214,7 +220,7 @@ const Dashboard = () => {
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [myGroups]);
+  }, [myGroups, toastNotificationsEnabled]);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -377,6 +383,13 @@ const Dashboard = () => {
     setMembersModalOpen(false);
     setSelectedGroupMembers([]);
     setSelectedGroupName("");
+  };
+
+  // Toast értesítések be/kikapcsolása
+  const handleToggleToastNotifications = () => {
+    const newValue = !toastNotificationsEnabled;
+    setToastNotificationsEnabled(newValue);
+    localStorage.setItem("toastNotificationsEnabled", String(newValue));
   };
 
   return (
@@ -1153,6 +1166,53 @@ const Dashboard = () => {
             </Box>
 
             <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Toast értesítések
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.7rem" }}
+                  >
+                    Értesítések új posztokról
+                  </Typography>
+                </Box>
+                <Button
+                  onClick={handleToggleToastNotifications}
+                  variant={toastNotificationsEnabled ? "contained" : "outlined"}
+                  sx={{
+                    minWidth: 100,
+                    borderRadius: "20px",
+                    background: toastNotificationsEnabled
+                      ? "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)"
+                      : "transparent",
+                    color: toastNotificationsEnabled ? "white" : "#667eea",
+                    borderColor: toastNotificationsEnabled
+                      ? "#4caf50"
+                      : "#667eea",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": {
+                      background: toastNotificationsEnabled
+                        ? "linear-gradient(135deg, #388e3c 0%, #2e7d32 100%)"
+                        : "rgba(102, 126, 234, 0.1)",
+                    },
+                  }}
+                >
+                  {toastNotificationsEnabled ? "Bekapcsolva" : "Kikapcsolva"}
+                </Button>
+              </Box>
+            </Box>
 
             <Divider sx={{ my: 2 }} />
 
