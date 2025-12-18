@@ -993,10 +993,12 @@ def register_routes(app):
             group_id = membership.group_id
             
             # A csoport összes posztja (nem törölt, és a user csatlakozása után készült)
+            # KIZÁRJUK azokat a posztokat, amelyeket a felhasználó írt (author_id == user_id)
             all_posts = (
                 Post.query
                 .filter_by(group_id=group_id, deleted_at=None)
                 .filter(Post.created_at >= membership.joined_at)
+                .filter(Post.author_id != user_id)  # A saját posztjai ne számolódjanak
                 .all()
             )
             
