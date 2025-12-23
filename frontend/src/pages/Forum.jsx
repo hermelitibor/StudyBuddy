@@ -50,7 +50,7 @@ const Forum = () => {
   const [openPostDialog, setOpenPostDialog] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
-  const [newPostFile, setNewPostFile] = useState(null);
+  const [newPostFiles, setNewPostFiles] = useState([]);
   const [submittingPost, setSubmittingPost] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState({});
   const [comments, setComments] = useState({});
@@ -77,6 +77,8 @@ const Forum = () => {
   const [editCommentDialogOpen, setEditCommentDialogOpen] = useState(false);
   const [commentToEdit, setCommentToEdit] = useState(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
+  const [editingCommentFile, setEditingCommentFile] = useState(null);
+  const [uploadingCommentAttachment, setUploadingCommentAttachment] = useState(false);
   const [updatingComment, setUpdatingComment] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
 
@@ -154,10 +156,10 @@ const Forum = () => {
     setOpenPostDialog(false);
 
     try {
-      await forumService.createPost(groupId, newPostTitle, newPostContent, newPostFile);
+      await forumService.createPost(groupId, newPostTitle, newPostContent, newPostFiles);
       setNewPostTitle("");
       setNewPostContent("");
-      setNewPostFile(null);
+      setNewPostFiles([]);
       await fetchPosts();
     } catch (err) {
       console.error("Poszt létrehozási hiba:", err);
@@ -463,6 +465,7 @@ const Forum = () => {
   const handleEditComment = (comment) => {
     setCommentToEdit(comment);
     setEditingCommentContent(comment.content);
+    setEditingCommentFile(null);
     setEditCommentDialogOpen(true);
   };
 
@@ -504,6 +507,48 @@ const Forum = () => {
     setEditCommentDialogOpen(false);
     setCommentToEdit(null);
     setEditingCommentContent("");
+    setEditingCommentFile(null);
+  };
+
+  const handleAddAttachmentToComment = async () => {
+    if (!commentToEdit || !editingCommentFile) return;
+
+    setUploadingCommentAttachment(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", editingCommentFile);
+
+      const token = localStorage.getItem("authToken");
+      await axios.post(
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/comments/${commentToEdit.id}/attachments`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Frissítjük a kommenteket
+      const commentsData = await forumService.getComments(commentToEdit.post_id);
+      const updatedComment = commentsData.find(c => c.id === commentToEdit.id);
+      if (updatedComment) {
+        setCommentToEdit(updatedComment);
+      }
+      // Frissítjük a kommentek listáját is
+      setComments({ ...comments, [commentToEdit.post_id]: commentsData });
+      setEditingCommentFile(null);
+    } catch (err) {
+      console.error("Fájl hozzáadási hiba:", err);
+      setError(
+        err.response?.data?.error || "Hiba történt a fájl hozzáadása során"
+      );
+    } finally {
+      setUploadingCommentAttachment(false);
+    }
   };
 
   const getCurrentUserId = () => {
@@ -1184,7 +1229,7 @@ const Forum = () => {
         open={openPostDialog}
         onClose={() => {
           setOpenPostDialog(false);
-          setNewPostFile(null);
+          setNewPostFiles([]);
         }}
         maxWidth="md"
         fullWidth
@@ -1230,7 +1275,11 @@ const Forum = () => {
               style={{ display: "none" }}
               id="post-file-upload"
               type="file"
-              onChange={(e) => setNewPostFile(e.target.files[0] || null)}
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setNewPostFiles((prev) => [...prev, ...files]);
+              }}
             />
             <label htmlFor="post-file-upload">
               <Button
@@ -1247,32 +1296,39 @@ const Forum = () => {
                   },
                 }}
               >
-                Fájl csatolása
+                Fájlok csatolása
               </Button>
             </label>
-            {newPostFile && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  p: 1,
-                  mt: 1,
-                  borderRadius: "8px",
-                  backgroundColor: "rgba(102, 126, 234, 0.05)",
-                }}
-              >
-                <AttachFileIcon sx={{ color: "#667eea", fontSize: 20 }} />
-                <Typography variant="body2" sx={{ flex: 1 }}>
-                  {newPostFile.name}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => setNewPostFile(null)}
-                  sx={{ color: "#d32f2f" }}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
+            {newPostFiles.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                {newPostFiles.map((file, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1,
+                      mb: 1,
+                      borderRadius: "8px",
+                      backgroundColor: "rgba(102, 126, 234, 0.05)",
+                    }}
+                  >
+                    <AttachFileIcon sx={{ color: "#667eea", fontSize: 20 }} />
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {file.name}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setNewPostFiles((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                      sx={{ color: "#d32f2f" }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
               </Box>
             )}
           </Box>
@@ -1280,7 +1336,7 @@ const Forum = () => {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => {
             setOpenPostDialog(false);
-            setNewPostFile(null);
+            setNewPostFiles([]);
           }}>Mégse</Button>
           <Button
             onClick={handleCreatePost}
@@ -1847,6 +1903,84 @@ const Forum = () => {
               ))}
             </Box>
           )}
+          
+          {/* Add New Attachment */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Új fájl hozzáadása:
+            </Typography>
+            <input
+              accept="*/*"
+              style={{ display: "none" }}
+              id="edit-comment-file-upload"
+              type="file"
+              onChange={(e) => setEditingCommentFile(e.target.files[0] || null)}
+            />
+            <label htmlFor="edit-comment-file-upload">
+              <Button
+                component="span"
+                variant="outlined"
+                startIcon={<AttachFileIcon />}
+                sx={{
+                  mb: 1,
+                  textTransform: "none",
+                  borderColor: "#667eea",
+                  color: "#667eea",
+                  "&:hover": {
+                    borderColor: "#5568d3",
+                    backgroundColor: "rgba(102, 126, 234, 0.05)",
+                  },
+                }}
+              >
+                Fájl kiválasztása
+              </Button>
+            </label>
+            {editingCommentFile && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 1,
+                  p: 1.5,
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(102, 126, 234, 0.05)",
+                  border: "1px solid rgba(102, 126, 234, 0.2)",
+                }}
+              >
+                <AttachFileIcon sx={{ color: "#667eea", fontSize: 18 }} />
+                <Typography variant="body2" sx={{ flex: 1, color: "#333" }}>
+                  {editingCommentFile.name}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={handleAddAttachmentToComment}
+                  disabled={uploadingCommentAttachment}
+                  variant="contained"
+                  sx={{
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    textTransform: "none",
+                    minWidth: "auto",
+                    px: 2,
+                  }}
+                >
+                  {uploadingCommentAttachment ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    "Hozzáadás"
+                  )}
+                </Button>
+                <IconButton
+                  size="small"
+                  onClick={() => setEditingCommentFile(null)}
+                  disabled={uploadingCommentAttachment}
+                  sx={{ color: "#d32f2f" }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button

@@ -635,14 +635,19 @@ def register_routes(app):
         if request.content_type and 'multipart/form-data' in request.content_type:
             title = request.form.get("title")
             content = request.form.get("content")
-            file = request.files.get("file")
+            # Több fájl kezelése - először próbáljuk a "files" tömböt, majd a régi "file" mezőt kompatibilitásért
+            files = request.files.getlist("files")
+            if not files or all(not f.filename for f in files):
+                # Ha nincs "files" tömb, próbáljuk a régi "file" mezőt
+                single_file = request.files.get("file")
+                files = [single_file] if single_file and single_file.filename else []
         else:
             data = request.get_json()
             if not data:
                 return jsonify({"error": "Nincs adat"}), 400
             title = data.get("title")
             content = data.get("content")
-            file = None
+            files = []
         
         #####################################################################
 
@@ -661,41 +666,43 @@ def register_routes(app):
         db.session.add(new_post)
         db.session.flush()  # Hogy megkapjuk az ID-t
 
-        # Fájl kezelés
-        attachment_data = None
-        if file and file.filename:
+        # Fájlok kezelése
+        attachments_data = []
+        if files:
             try:
-                # Biztonságos fájlnév
-                filename = secure_filename(file.filename)
-                # Egyedi fájlnév generálása
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-                unique_filename = f"{timestamp}_{filename}"
-                
                 # Uploads mappa létrehozása ha nem létezik
                 upload_dir = os.path.join(Config.UPLOAD_FOLDER, "posts")
                 os.makedirs(upload_dir, exist_ok=True)
                 
-                file_path = os.path.join(upload_dir, unique_filename)
-                file.save(file_path)
-                
-                # Relatív URL a fájlhoz
-                file_url = f"/uploads/posts/{unique_filename}"
-                
-                attachment = PostAttachment(
-                    post_id=new_post.id,
-                    filename=filename,
-                    file_url=file_url,
-                    mime_type=file.content_type,
-                    uploaded_at=datetime.now(timezone.utc)
-                )
-                db.session.add(attachment)
-                
-                attachment_data = {
-                    "id": attachment.id,
-                    "filename": attachment.filename,
-                    "file_url": attachment.file_url,
-                    "mime_type": attachment.mime_type
-                }
+                for file in files:
+                    if file and file.filename:
+                        # Biztonságos fájlnév
+                        filename = secure_filename(file.filename)
+                        # Egyedi fájlnév generálása
+                        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+                        unique_filename = f"{timestamp}_{filename}"
+                        
+                        file_path = os.path.join(upload_dir, unique_filename)
+                        file.save(file_path)
+                        
+                        # Relatív URL a fájlhoz
+                        file_url = f"/uploads/posts/{unique_filename}"
+                        
+                        attachment = PostAttachment(
+                            post_id=new_post.id,
+                            filename=filename,
+                            file_url=file_url,
+                            mime_type=file.content_type,
+                            uploaded_at=datetime.now(timezone.utc)
+                        )
+                        db.session.add(attachment)
+                        
+                        attachments_data.append({
+                            "id": attachment.id,
+                            "filename": attachment.filename,
+                            "file_url": attachment.file_url,
+                            "mime_type": attachment.mime_type
+                        })
             except Exception as e:
                 db.session.rollback()
                 return jsonify({"error": f"Fájl feltöltési hiba: {str(e)}"}), 500
@@ -712,8 +719,8 @@ def register_routes(app):
             "updated_at": new_post.updated_at.isoformat()
         }
         
-        if attachment_data:
-            post_response["attachment"] = attachment_data
+        if attachments_data:
+            post_response["attachments"] = attachments_data
 
         return jsonify({
             "message": "Poszt sikeresen létrehozva",
@@ -1394,6 +1401,70 @@ def register_routes(app):
                 "id": attachment.id,
                 "filename": attachment.filename,
                 "url": attachment.file_url
+            }
+        }), 201
+
+    @app.route("/comments/<int:comment_id>/attachments", methods=["POST"])
+    def upload_comment_attachment(comment_id):
+        # AUTH
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        token = auth_header.split(" ")[1]
+        decoded = verify_jwt_token(token)
+        if not decoded:
+            return jsonify({"error": "Érvénytelen token"}), 401
+
+        user_id = decoded["user_id"]
+
+        comment = Comment.query.get(comment_id)
+        if not comment or comment.deleted_at:
+            return jsonify({"error": "Komment nem található"}), 404
+
+        if comment.author_id != user_id:
+            return jsonify({"error": "Csak a komment szerzője tölthet fel fájlt"}), 403
+
+        # FILE CHECK
+        if "file" not in request.files:
+            return jsonify({"error": "Nincs fájl csatolva"}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": "Üres fájlnév"}), 400
+
+        filename = secure_filename(file.filename)
+        # Egyedi fájlnév generálása
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        unique_filename = f"{timestamp}_{filename}"
+
+        # Uploads mappa létrehozása ha nem létezik
+        upload_dir = os.path.join(Config.UPLOAD_FOLDER, "comments")
+        os.makedirs(upload_dir, exist_ok=True)
+
+        file_path = os.path.join(upload_dir, unique_filename)
+        file.save(file_path)
+
+        file_url = f"/uploads/comments/{unique_filename}"
+
+        attachment = CommentAttachment(
+            comment_id=comment_id,
+            filename=filename,
+            file_url=file_url,
+            mime_type=file.content_type,
+            uploaded_at=datetime.now(timezone.utc)
+        )
+
+        db.session.add(attachment)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Fájl sikeresen feltöltve",
+            "attachment": {
+                "id": attachment.id,
+                "filename": attachment.filename,
+                "file_url": attachment.file_url,
+                "mime_type": attachment.mime_type
             }
         }), 201
 

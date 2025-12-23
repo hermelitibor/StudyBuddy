@@ -147,15 +147,22 @@ const forumService = {
     return response.data.posts || [];
   },
 
-  createPost: async (groupId, title, content, file = null) => {
+  createPost: async (groupId, title, content, files = null) => {
     const token = getAuthToken();
     
-    if (file) {
+    // Ha van fájl (tömb vagy egyetlen fájl)
+    const fileArray = Array.isArray(files) ? files : (files ? [files] : []);
+    
+    if (fileArray.length > 0) {
       // Multipart/form-data használata fájl esetén
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-      formData.append("file", file);
+      
+      // Minden fájlt hozzáadunk
+      fileArray.forEach((file) => {
+        formData.append("files", file);
+      });
       
       const response = await axios.post(
         `${API_URL}/groups/${groupId}/posts`,
