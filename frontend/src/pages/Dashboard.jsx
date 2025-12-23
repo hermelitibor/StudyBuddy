@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Avatar,
   Dialog,
@@ -24,7 +24,6 @@ import {
   Tooltip,
 } from "@mui/material";
 import {
-  Add as AddIcon,
   Logout as LogoutIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
@@ -40,33 +39,53 @@ import SubjectGroupSearch from "../components/SubjectGroupSearch.jsx";
 
 // Tárgyak listája pelda
 
-
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useSelector((state) => state.auth);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
-  const [selectedSubject] = useState("");
-  const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [joiningGroupId, setJoiningGroupId] = useState(null);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [selectedGroupMembers, setSelectedGroupMembers] = useState(null);
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [myGroups, setMyGroups] = useState([]);
   const [myGroupsLoading, setMyGroupsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("home");
+  
+  // URL paraméterből olvassuk a tab-ot, ha van
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "home");
   const [unreadCounts, setUnreadCounts] = useState({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [toastNotificationsEnabled, setToastNotificationsEnabled] = useState(() => {
-    // Alapértelmezetten bekapcsolva, kivéve ha korábban kikapcsolták
-    const saved = localStorage.getItem("toastNotificationsEnabled");
-    return saved === null ? true : saved === "true";
-  });
+  const [toastNotificationsEnabled, setToastNotificationsEnabled] = useState(
+    () => {
+      // Alapértelmezetten bekapcsolva, kivéve ha korábban kikapcsolták
+      const saved = localStorage.getItem("toastNotificationsEnabled");
+      return saved === null ? true : saved === "true";
+    }
+  );
+
+  // Ha URL-ben van tab paraméter, beállítjuk
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["home", "my", "search"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Tab váltáskor frissítjük az URL-t
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "home") {
+      // Kezdőlap esetén eltávolítjuk a tab paramétert
+      navigate("/dashboard", { replace: true });
+    } else {
+      // Egyéb tab-ok esetén beállítjuk a paramétert
+      navigate(`/dashboard?tab=${tab}`, { replace: true });
+    }
+  };
 
   useEffect(() => {
     const fetchMyGroups = async () => {
@@ -130,10 +149,10 @@ const Dashboard = () => {
     };
 
     fetchUnreadCounts();
-    
+
     // Real-time polling: 5 másodpercenként ellenőrzi az új posztokat
     const interval = setInterval(fetchUnreadCounts, 5000);
-    
+
     return () => clearInterval(interval);
   }, [activeTab, myGroups, toastNotificationsEnabled]);
 
@@ -217,10 +236,6 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    console.log("🔄 GROUPS FRISSÜLT:", groups);
-  }, [groups]);
-
   const handleLogout = () => {
     authService.logout();
     dispatch(logout());
@@ -229,7 +244,7 @@ const Dashboard = () => {
   };
 
   const handleAddButton = () => {
-    setActiveTab("search");
+    handleTabChange("search");
     //setJoinGroupModalOpen(true);
   };
 
@@ -280,59 +295,6 @@ const Dashboard = () => {
     }
   };*/
 
-  const handleJoinToGroup = async (groupId) => {
-    console.log("HANDLE JOIN CALLED:", groupId);
-
-    if (!groupId) return;
-
-    setJoiningGroupId(groupId);
-    setError(null);
-
-    try {
-      await groupService.joinGroup(groupId);
-    } catch (err) {
-      if (err.response?.status !== 400) {
-        setError(err.response?.data?.error || "Hiba történt");
-      }
-      console.log("ℹ️ Már tag vagy:", err.response?.data);
-    }
-
-    // frissít (try/catch UTÁN)!
-    if (selectedSubject) {
-      try {
-        const response = await groupService.searchGroups(selectedSubject);
-        const allGroups = [];
-        const seenIds = new Set();
-
-        if (response.all_groups?.forEach) {
-          response.all_groups.forEach((group) => {
-            if (!seenIds.has(group.id)) {
-              allGroups.push(group);
-              seenIds.add(group.id);
-            }
-          });
-        }
-
-        if (
-          response.recommended_group &&
-          !seenIds.has(response.recommended_group.id)
-        ) {
-          allGroups.push(response.recommended_group);
-        }
-
-        setGroups(allGroups);
-      } catch (e) {
-        console.log("Frissítés hiba:", e);
-      }
-    }
-
-    setJoiningGroupId(null);
-  };
-
-  const isUserMemberOfGroup = (group) => {
-    return group.is_member === true;
-  };
-
   const getInitials = (name) => {
     if (!name) return "U";
     const words = name.trim().split(" ");
@@ -360,7 +322,6 @@ const Dashboard = () => {
       setSelectedGroupMembers(members || []);
     } catch (err) {
       console.error("Tagok hiba:", err);
-      setError(err.message || "Hiba történt a tagok lekérése során");
       setSelectedGroupMembers([]);
     }
   };
@@ -406,7 +367,7 @@ const Dashboard = () => {
           </Avatar>
           {/* Sorrend: Kezdőlap → Saját csoportok → Keresés → Beállítások → Kijelentkezés */}
           <Button
-            onClick={() => setActiveTab("home")}
+            onClick={() => handleTabChange("home")}
             variant={activeTab === "home" ? "contained" : "outlined"}
             sx={{
               ml: 2.5,
@@ -440,7 +401,7 @@ const Dashboard = () => {
           </Button>
 
           <Button
-            onClick={() => setActiveTab("my")}
+            onClick={() => handleTabChange("my")}
             variant={activeTab === "my" ? "contained" : "outlined"}
             sx={{
               ml: 0.5,
