@@ -154,7 +154,9 @@ def register_routes(app):
         if not decoded:
             return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
 
-        user = User.query.get(decoded["user_id"])
+        #user = User.query.get(decoded["user_id"])
+        user = db.session.get(User, decoded["user_id"])
+
 
         return jsonify({
             "email": user.email,
@@ -301,7 +303,9 @@ def register_routes(app):
             return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
 
         user_id = decoded["user_id"]
-        user = User.query.get(user_id)
+#        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
+
 
         subject = request.args.get("q", "").strip()
         if not subject:
@@ -324,7 +328,9 @@ def register_routes(app):
 
             same_interest_count = 0
             for m in members:
-                u = User.query.get(m.user_id)
+                #u = User.query.get(m.user_id)
+                u = db.session.get(User, m.user_id)
+
                 if u and u.hobbies:
                     if user_interests.intersection(set(u.hobbies.split(","))):
                         same_interest_count += 1
@@ -585,7 +591,9 @@ def register_routes(app):
 
         members = []
         for gm in group_memberships:
-            u = User.query.get(gm.user_id)
+            #u = User.query.get(gm.user_id)
+            u = db.session.get(User, gm.user_id)
+
             if u:
                 members.append({
                     "user_id": gm.user_id,
