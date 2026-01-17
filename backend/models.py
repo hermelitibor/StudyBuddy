@@ -38,7 +38,7 @@ class User(db.Model):
 class GroupMember(db.Model):
     __tablename__ = 'group_members'
     
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), primary_key=True, index=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('study_groups.id'), primary_key=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, index=True)
     
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -49,7 +49,7 @@ class GroupMember(db.Model):
 
 
 class Group(db.Model):
-    __tablename__ = 'groups'
+    __tablename__ = 'study_groups'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), unique=True, nullable=False)
@@ -80,7 +80,7 @@ class Event(db.Model):
     event_date = db.Column(db.DateTime, nullable=False, index=True)
     location = db.Column(db.String(200), nullable=True)
     
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False, index=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('study_groups.id'), nullable=False, index=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
@@ -99,7 +99,7 @@ class Post(db.Model):
     title = db.Column(db.String(250), nullable=False)
     content = db.Column(db.Text, nullable=False)
     
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False, index=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('study_groups.id'), nullable=False, index=True)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
