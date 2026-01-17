@@ -16,7 +16,7 @@ def create_app():
     app = Flask(__name__)
     # CORS MINDEN HTTP metódusra (OPTIONS, POST, GET stb.)
     CORS(app, 
-         origins=["http://localhost:3000"], 
+         origins=["http://localhost:3000", "https://elte-frontend-5bnk.vercel.app"], 
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
          allow_headers=["Content-Type", "Authorization"],
          supports_credentials=True,
