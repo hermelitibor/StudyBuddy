@@ -180,7 +180,7 @@ export function PomodoroPage() {
                 type="button"
                 onClick={() => setIsGroupSession(false)}
                 className={cn(
-                  "flex-1 px-3 py-2 rounded-lg border text-center",
+                  "flex-1 px-3 py-2 rounded-lg border text-center transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15",
                   !isGroupSession
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border text-foreground",
@@ -192,7 +192,7 @@ export function PomodoroPage() {
                 type="button"
                 onClick={() => setIsGroupSession(true)}
                 className={cn(
-                  "flex-1 px-3 py-2 rounded-lg border text-center",
+                  "flex-1 px-3 py-2 rounded-lg border text-center transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15",
                   isGroupSession
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border text-foreground",
@@ -214,7 +214,12 @@ export function PomodoroPage() {
                   className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
                   placeholder="Pl. Analízis házi 3. feladat"
                 />
-                <Button type="button" size="sm" onClick={handleAddTask}>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddTask}
+                  className="hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer"
+                >
                   Hozzáadás
                 </Button>
               </div>
@@ -330,7 +335,7 @@ export function PomodoroPage() {
               <Button
                 type="button"
                 onClick={handleStartSession}
-                className="min-w-[140px] rounded-xl"
+                className="min-w-[140px] rounded-xl hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer"
               >
                 Indítás
               </Button>
@@ -434,7 +439,7 @@ export function PomodoroPage() {
                 {(mode === MODES.IDLE || mode === MODES.PAUSED) && (
                   <Button
                     onClick={handleStartSession}
-                    className="min-w-[120px] rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                    className="min-w-[120px] rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer"
                   >
                     {mode === MODES.IDLE ? "Indítás" : "Folytatás"}
                   </Button>
@@ -443,7 +448,7 @@ export function PomodoroPage() {
                   <Button
                     onClick={handlePause}
                     variant="outline"
-                    className="min-w-[120px] rounded-xl"
+                    className="min-w-[120px] rounded-xl hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
                   >
                     Szüneteltetés
                   </Button>
@@ -452,7 +457,7 @@ export function PomodoroPage() {
                   <Button
                     onClick={handleResetClick}
                     variant="outline"
-                    className="rounded-xl"
+                    className="rounded-xl hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
                   >
                     Reset
                   </Button>

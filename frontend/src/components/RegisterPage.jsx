@@ -260,7 +260,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
       <Card className="w-full max-w-2xl p-8 border-border shadow-lg">
         <button
           onClick={onSwitchToLogin}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Bejelentkezés
@@ -353,7 +353,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
-                  className="w-full justify-between"
+                  className="w-full justify-between hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-muted-foreground" />
@@ -495,7 +495,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
 
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary90 text-white"
+            className="w-full bg-primary hover:bg-primary90 text-white hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             {isLoading ? "Fiók létrehozása..." : "Fiók létrehozása"}
@@ -507,7 +507,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
               Már van fiókja?{" "}
             <button
               onClick={onSwitchToLogin}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
             >
               Bejelentkezés
             </button>

@@ -63,7 +63,7 @@ function HomePage({ onNavigate}) {
           <div className="flex gap-4 justify-center flex-col sm:flex-row">
             <Button 
               onClick={() => onNavigate("search")}
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer"
             >
               <Search className="w-5 h-5 mr-2" />
               Tanulócsoport kereső
@@ -72,7 +72,7 @@ function HomePage({ onNavigate}) {
             <Button 
               onClick={() => onNavigate("mygroups")}
               variant="outline"
-              className="px-8 py-6 text-lg rounded-xl border-2 border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-300"
+              className="px-8 py-6 text-lg rounded-xl border-2 border-primary/30 hover:border-primary hover:bg-primary/5 hover:shadow-xl hover:-translate-y-1 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
             >
               <Users className="w-5 h-5 mr-2" />
               Saját csoportok
@@ -109,7 +109,7 @@ function HomePage({ onNavigate}) {
           <div className="grid md:grid-cols-3 gap-6">
             <button
               onClick={() => onNavigate("search")}  // ✅ State: "search"
-              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
+              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-primary/40 hover:ring-2 hover:ring-primary/15 cursor-pointer group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <Search className="w-7 h-7 text-primary" />
@@ -120,7 +120,7 @@ function HomePage({ onNavigate}) {
 
             <button
               onClick={() => onNavigate("mygroups")}
-              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
+              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-primary/40 hover:ring-2 hover:ring-primary/15 cursor-pointer group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <UserPlus className="w-7 h-7 text-primary" />
@@ -131,7 +131,7 @@ function HomePage({ onNavigate}) {
 
             <button
               onClick={() => onNavigate("mygroups")}
-              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
+              className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-primary/40 hover:ring-2 hover:ring-primary/15 cursor-pointer group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <Calendar className="w-7 h-7 text-primary" />

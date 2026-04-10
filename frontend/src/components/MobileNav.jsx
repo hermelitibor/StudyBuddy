@@ -75,7 +75,7 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
         {/* Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-10 h-10 bg-sidebar-accent/50 hover:bg-sidebar-accent rounded-lg flex items-center justify-center transition-all duration-200"
+          className="w-10 h-10 bg-sidebar-accent/50 hover:bg-sidebar-accent rounded-lg flex items-center justify-center transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
         >
           {isOpen ? (
             <X className="w-5 h-5 text-sidebar-foreground" />
@@ -106,7 +106,7 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
                     className={cn(
-                      "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300",
+                      "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5",
                       isActive
                         ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30"
                         : "bg-sidebar-accent/80 hover:bg-sidebar-primary/80",
@@ -149,7 +149,7 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
             <div className="px-4 py-4 border-t border-sidebar-border/20">
               <button
                 onClick={onLogout}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 bg-sidebar-accent/80 hover:bg-sidebar-primary/80"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 bg-sidebar-accent/80 hover:bg-sidebar-primary/80 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
               >
                 <LogOut className="w-5 h-5 text-sidebar-accent-foreground" />
                 <div className="flex-1 text-left">

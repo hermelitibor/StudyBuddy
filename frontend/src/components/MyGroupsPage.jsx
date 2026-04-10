@@ -211,7 +211,7 @@ const MyGroupsPage = () => {
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
-                        className="flex-1 rounded-lg border-primary/30 hover:bg-primary/5 hover:border-primary transition-all duration-300"
+                        className="flex-1 rounded-lg border-primary/30 hover:bg-primary/5 hover:border-primary hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           openMembersDialog(group);
@@ -270,7 +270,7 @@ const MyGroupsPage = () => {
                       e.stopPropagation();
                       handleLeaveGroup(group.id);
                     }}
-                    className="flex-1 rounded-lg border-destructive/30 hover:bg-destructive/5 hover:border-destructive text-destructive transition-all duration-300 font-medium"
+                    className="flex-1 rounded-lg border-destructive/30 hover:bg-destructive/5 hover:border-destructive text-destructive transition-all duration-300 font-medium hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-destructive/15 cursor-pointer"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Kilépés
@@ -288,7 +288,7 @@ const MyGroupsPage = () => {
             <p className="text-muted-foreground max-w-md mx-auto mb-8">
               Nem csatlakoztál még egyetlen tanulócsoporthoz sem. Kezdd azzal, hogy keresel tárgyakat és csatlakozol megfelelő csoportokhoz.
             </p>
-            <Button variant="outline" className="text-primary hover:bg-primary/5" onClick={() => navigate("/search")}>
+            <Button variant="outline" className="text-primary hover:bg-primary/5 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer" onClick={() => navigate("/search")}>
               Csoportok keresése
             </Button>
           </div>

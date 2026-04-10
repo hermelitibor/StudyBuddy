@@ -149,7 +149,7 @@ export function ProfileSettingsPage() {
           <Button 
             variant="outline" 
             onClick={() => navigate('/')}  // ✅ navigate('/')
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Vissza a kezdőlapra
@@ -299,7 +299,7 @@ export function ProfileSettingsPage() {
 
               <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full md:w-auto">
+                  <Button variant="outline" className="w-full md:w-auto hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer">
                     <Lock className="w-4 h-4 mr-2" />
                     Jelszó módosítása
                   </Button>
@@ -396,12 +396,14 @@ export function ProfileSettingsPage() {
                           setConfirmPassword("");
                         }}
                         disabled={isChangingPassword}
+                        className="hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/15 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
                       >
                         Mégse
                       </Button>
                       <Button
                         type="submit"
                         disabled={isChangingPassword}
+                        className="hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
                       >
                         {isChangingPassword ? "Módosítás..." : "Jelszó módosítása"}
                       </Button>

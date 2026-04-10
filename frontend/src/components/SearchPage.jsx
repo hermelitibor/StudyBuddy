@@ -160,7 +160,7 @@ export function SearchPage() {
             variant="outline"
             size="sm"
             onClick={handleGoHome}
-            className="flex items-center gap-2 border-[#3b82f6]/30 hover:bg-[#3b82f6]/5 hover:border-[#3b82f6] transition-all duration-300"
+            className="flex items-center gap-2 border-[#3b82f6]/30 hover:bg-[#3b82f6]/5 hover:border-[#3b82f6] hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#3b82f6]/15 transition-all duration-300 cursor-pointer"
           >
             <Home className="w-4 h-4" />
             Vissza a kezdőlapra
@@ -193,7 +193,7 @@ export function SearchPage() {
             <Button
               onClick={handleSearch}
               disabled={loadingSubjects || !searchQuery.trim()}
-              className="bg-gradient-to-r from-[#012851] to-[#3b82f6] hover:from-[#012851]/90 hover:to-[#3b82f6]/90 text-white px-8 py-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+              className="bg-gradient-to-r from-[#012851] to-[#3b82f6] hover:from-[#012851]/90 hover:to-[#3b82f6]/90 text-white px-8 py-6 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-[#3b82f6]/20 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
             >
               {loadingSubjects ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

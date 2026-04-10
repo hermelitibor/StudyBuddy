@@ -105,14 +105,14 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
                   <button
                     onClick={() => handleNavigationClick(item.id)}
                     className={cn(
-                      "transition-all duration-300 flex items-center relative overflow-hidden",
-                      "hover:scale-110 hover:shadow-lg",
+                      "transition-all duration-300 flex items-center relative overflow-hidden cursor-pointer",
+                      "hover:shadow-xl hover:ring-2 hover:ring-sidebar-primary/20",
                       isExpanded
-                        ? "w-full px-4 py-3 justify-start rounded-xl"
-                        : "w-12 h-12 justify-center mx-auto rounded-full",
+                        ? "w-full px-4 py-3 justify-start rounded-xl hover:-translate-y-0.5 hover:border-sidebar-primary/40"
+                        : "w-12 h-12 justify-center mx-auto rounded-full hover:scale-110",
                       isActive
                         ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30 scale-105"
-                        : "bg-sidebar-accent hover:bg-sidebar-primary/80"
+                        : "bg-sidebar-accent border border-transparent hover:bg-sidebar-primary/80"
                     )}
                   >
                     <Icon

@@ -65,7 +65,7 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
         <Card className="w-full max-w-md p-8 border-border shadow-lg">
           <button
             onClick={() => setShowForgotPassword(false)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Bejelentkezés
@@ -104,7 +104,7 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
 
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-white hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? "Küldés.." : "Ideiglenes jelszó küldése"}
@@ -178,7 +178,7 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
             <button
               type="button"
               onClick={() => setShowForgotPassword(true)}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
             >
               Elfelejtetted a jelszavad?
             </button>
@@ -186,7 +186,7 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
 
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-white hover:shadow-xl hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/20 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             {isLoading ? "Bejelentkezés..." : "Bejelentkezés"}
@@ -198,7 +198,7 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
             Még nincs fiókod?{" "}
             <button
               onClick={onSwitchToRegister}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
             >
               Regisztráció
             </button>
