@@ -5,7 +5,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   X as CloseIcon,
-  Delete as DeleteIcon,
+  Trash2 as DeleteIcon,
   Edit as EditIcon,
 } from "lucide-react";
 import { eventService } from "../../service/api";
@@ -86,10 +86,10 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
 
   const getEventsForDate = (date) => {
     if (!date) return [];
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatDateForInput(date);
     return events.filter((event) => {
       const eventDate = new Date(event.date);
-      return eventDate.toISOString().split("T")[0] === dateStr;
+      return formatDateForInput(eventDate) === dateStr;
     });
   };
 
@@ -112,10 +112,30 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
     return text.substring(0, maxLength) + "...";
   };
 
-  const handleDateClick = (date) => {
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTimeForInput = (date) => {
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
+  const formatDateTimeForApi = (date, time) => `${date}T${time}:00`;
+
+  const handleDateClick = (date, clickEvent) => {
     if (!date) return;
-    const dateStr = date.toISOString().split("T")[0];
-    const timeStr = new Date().toTimeString().slice(0, 5);
+
+    if (clickEvent?.target?.closest("[data-calendar-event]")) {
+      return;
+    }
+
+    const dateStr = formatDateForInput(date);
+    const timeStr = formatTimeForInput(new Date());
     setEventForm({
       title: "",
       date: dateStr,
@@ -131,13 +151,19 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
     const eventDate = new Date(event.date);
     setEventForm({
       title: event.title || "",
-      date: eventDate.toISOString().split("T")[0],
-      time: eventDate.toTimeString().slice(0, 5),
+      date: formatDateForInput(eventDate),
+      time: formatTimeForInput(eventDate),
       description: event.description || "",
       location: event.location || "",
     });
     setEditingEvent(event);
     setEventDialogOpen(true);
+  };
+
+  const resetEventDialog = () => {
+    setEventDialogOpen(false);
+    setEditingEvent(null);
+    setEventForm({ title: "", date: "", time: "", description: "", location: "" });
   };
 
   const handleSubmitEvent = async () => {
@@ -150,22 +176,24 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
     setError(null);
   
     try {
-      const dateTime = new Date(`${eventForm.date}T${eventForm.time}`);
-      const isoDateTime = dateTime.toISOString();
+      const localDateTime = formatDateTimeForApi(eventForm.date, eventForm.time);
     
       if (editingEvent) {
-        await eventService.updateEvent(
+        const updatedEvent = await eventService.updateEvent(
           editingEvent.id,
           eventForm.title,
-          isoDateTime,
+          localDateTime,
           eventForm.description,
           eventForm.location
+        );
+        setEvents((prev) =>
+          prev.map((event) => (event.id === editingEvent.id ? updatedEvent : event))
         );
       } else {
         const createdEvent = await eventService.createEvent(
           groupId,
           eventForm.title,
-          isoDateTime,
+          localDateTime,
           eventForm.description,
           eventForm.location
         );
@@ -184,9 +212,9 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
         }
         
         setEvents(prev => [...prev, createdEvent]);
-        setEventForm({ title: "", date: "", time: "", description: "", location: "" });
       }
-      
+
+      resetEventDialog();
     } catch (err) {
       console.error("❌ Esemény mentési hiba:", err);
       setError(err.response?.data?.error || "Hiba történt az esemény mentése során");
@@ -334,7 +362,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                   : 'bg-white/80 border-[#3b82f6]/20 hover:bg-[#3b82f6]/5 hover:border-[#3b82f6]/40' 
                                 : 'bg-gray-50/50 border-gray-200 opacity-40 cursor-default'
                               }`}
-                            onClick={() => handleDateClick(day)}
+                            onClick={(e) => handleDateClick(day, e)}
                           >
                             {day && (
                               <>
@@ -349,6 +377,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                       {eventGroup.events.map((event) => (
                                         <div
                                           key={event.id}
+                                          data-calendar-event="true"
                                           className="px-2 py-1 bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white text-xs font-semibold rounded-lg truncate hover:scale-105 hover:shadow-md transition-all duration-200 cursor-pointer shadow-sm flex-shrink-0 flex-grow"
                                           style={{ minWidth: eventGroup.sideBySide ? '0' : '100%' }}
                                           onClick={(e) => {
@@ -540,19 +569,15 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
               {editingEvent && editingEvent.creator_id === getCurrentUserId() && (
                 <button
                   onClick={() => handleDeleteEvent(editingEvent.id)}
-                  className="px-8 py-4 text-red-600 hover:text-red-700 hover:bg-red-50/50 border border-red-200/50 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+                  className="px-8 py-4 text-red-600 hover:text-red-700 hover:bg-red-50/70 border border-red-200/50 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
                 >
                   Törlés
                 </button>
               )}
               <button
-                onClick={() => {
-                  setEventDialogOpen(false);
-                  setEditingEvent(null);
-                  setEventForm({ title: "", date: "", time: "", description: "", location: "" });
-                }}
+                onClick={resetEventDialog}
                 disabled={submitting}
-                className="px-8 py-4 text-[#6b7280] hover:text-[#012851] hover:bg-[#3b82f6]/5 border border-[#6b7280]/30 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-4 bg-white text-[#012851] border border-[#3b82f6]/30 rounded-3xl font-semibold shadow-md cursor-pointer hover:bg-[#eff6ff] hover:border-[#3b82f6]/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Mégse
               </button>
@@ -564,7 +589,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   !eventForm.date ||
                   (editingEvent && editingEvent.creator_id !== getCurrentUserId())
                 }
-                className="px-10 py-4 bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white font-bold rounded-3xl hover:from-[#3b82f6]/90 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 min-w-[140px] justify-center"
+                className="px-10 py-4 bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white font-bold rounded-3xl hover:from-[#3b82f6]/90 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 min-w-[140px] justify-center"
               >
                 {submitting ? (
                   <>

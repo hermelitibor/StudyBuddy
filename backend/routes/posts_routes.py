@@ -1,11 +1,32 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from models import db
 from models import Group, GroupMember, Post, Comment, Event, PostView, PostAttachment, CommentAttachment
 from services.auth_service import verify_jwt_token
 from services.file_service import save_post_files
 
 posts_bp = Blueprint("posts", __name__)
+APP_TIMEZONE = ZoneInfo("Europe/Budapest")
+
+
+def parse_event_datetime(date_str):
+    parsed = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(APP_TIMEZONE).replace(tzinfo=None)
+
+    return parsed
+
+
+def serialize_event_datetime(value):
+    if value is None:
+        return None
+
+    if value.tzinfo is not None:
+        value = value.astimezone(APP_TIMEZONE).replace(tzinfo=None)
+
+    return value.isoformat(timespec="seconds")
 
 def get_user_id():
     auth = request.headers.get("Authorization")
@@ -501,7 +522,7 @@ def list_events(group_id):
             "title": e.title,
             "description": e.description,
             # Fontos: event_date néven adjuk vissza, de ISO formátumban
-            "date": e.event_date.isoformat(), 
+            "date": serialize_event_datetime(e.event_date),
             "location": e.location,
             "creator_id": e.creator_id,
             "group_id": e.group_id,
@@ -540,10 +561,7 @@ def create_event(group_id):
         return jsonify({"error": "title és date kötelező"}), 400
 
     try:
-        # A datetime-ot a timezone-nal együtt kell kezelni
-        # datetime.fromisoformat nem kezeli a 'Z' végű UTC dátumokat, 
-        # ezért a .replace('Z', '+00:00') trükköt használjuk, ha szükséges.
-        event_dt = datetime.fromisoformat(date_str.replace('Z', '+00:00')).astimezone(timezone.utc)
+        event_dt = parse_event_datetime(date_str)
     except ValueError:
         return jsonify({"error": "Hibás dátum formátum. Használd az ISO 8601 formátumot."}), 400
     
@@ -566,7 +584,7 @@ def create_event(group_id):
         "event": {
             "id": new_event.id,
             "title": new_event.title,
-            "date": new_event.event_date.isoformat(),
+            "date": serialize_event_datetime(new_event.event_date),
             "creator_id": new_event.creator_id,
         }
     }), 201
@@ -604,7 +622,7 @@ def update_or_delete_event(event_id):
             event.location = data["location"]
         if "date" in data:
             try:
-                event_dt = datetime.fromisoformat(data["date"].replace('Z', '+00:00')).astimezone(timezone.utc)
+                event_dt = parse_event_datetime(data["date"])
                 event.event_date = event_dt
             except ValueError:
                 return jsonify({"error": "Hibás dátum formátum"}), 400
@@ -617,7 +635,7 @@ def update_or_delete_event(event_id):
             "event": {
                 "id": event.id,
                 "title": event.title,
-                "date": event.event_date.isoformat(),
+                "date": serialize_event_datetime(event.event_date),
             }
         }), 200
 
