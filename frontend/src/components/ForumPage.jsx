@@ -509,6 +509,16 @@ const ForumPage = ({
   const handleEventDeleted = (eventId) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
   };
+
+  const isUpcomingEvent = (event) => {
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startOfEventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+    return startOfEventDay >= startOfToday;
+  };
+
+  const upcomingEvents = events.filter(isUpcomingEvent);
   
   // 1. CSOPORT TAGOK BETÖLTÉSE
   useEffect(() => {
@@ -876,10 +886,10 @@ const ForumPage = ({
                 <CalendarIcon className="w-4 h-4 mr-2" />
                 Naptár
               </Button>
-              <CalendarDialog 
-                groupId={groupId} 
-                showCalendar={showCalendar} 
-                setShowCalendar={setShowCalendar}
+              <Calendar
+                open={showCalendar}
+                onClose={() => setShowCalendar(false)}
+                groupId={groupId}
                 onEventCreated={handleEventCreated}
                 onEventDeleted={handleEventDeleted}
               />
@@ -1026,7 +1036,7 @@ const ForumPage = ({
                 Közeledő események
               </h3>
               <div className="space-y-3">
-                {events.map((event) => (
+                {upcomingEvents.map((event) => (
                   <div key={event.id} className="p-4 bg-primary/10 border border-primary/20 rounded-xl group hover:bg-primary/20 transition-all">
                     <div className="flex items-start gap-3">
                       <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -1049,7 +1059,7 @@ const ForumPage = ({
                     )}
                   </div>
                 ))}
-                {events.length === 0 && !loadingEvents && (
+                {upcomingEvents.length === 0 && !loadingEvents && (
                   <div className="text-center py-12 text-muted-foreground">
                     <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
                     <p className="text-sm">Nincsenek közelgő események</p>

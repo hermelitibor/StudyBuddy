@@ -127,8 +127,20 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
 
   const formatDateTimeForApi = (date, time) => `${date}T${time}:00`;
 
+  const getStartOfDay = (date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const isPastCalendarDay = (date) => {
+    if (!date) return false;
+    return getStartOfDay(date) < getStartOfDay(new Date());
+  };
+
   const handleDateClick = (date, clickEvent) => {
     if (!date) return;
+
+    if (isPastCalendarDay(date)) {
+      return;
+    }
 
     if (clickEvent?.target?.closest("[data-calendar-event]")) {
       return;
@@ -256,6 +268,11 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
     return user ? user.id : null;
   };
 
+  const canEditEvent = (event) => {
+    if (!event) return true;
+    return event.creator_id === getCurrentUserId() && !isPastCalendarDay(new Date(event.date));
+  };
+
   const previousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
@@ -334,6 +351,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                       {days.map((day, index) => {
                         const dayEvents = day ? getEventsForDate(day) : [];
                         const isToday = day && day.toDateString() === new Date().toDateString();
+                        const isPastDay = day ? isPastCalendarDay(day) : false;
                         const eventsByTime = day ? groupEventsByTime(dayEvents) : {};
                         const timeSlots = Object.keys(eventsByTime).sort();
                         const displayedEvents = [];
@@ -355,11 +373,13 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                         return (
                           <div
                             key={index}
-                            className={`h-16 w-full p-1.5 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md relative overflow-hidden flex flex-col  
+                            className={`h-16 w-full p-1.5 border-2 rounded-lg transition-all duration-200 relative overflow-hidden flex flex-col  
                               ${day 
-                                ? isToday 
+                                ? isPastDay
+                                  ? 'bg-gray-100/90 border-gray-200 text-gray-400 cursor-not-allowed opacity-70'
+                                  : isToday 
                                   ? 'bg-gradient-to-br from-[#3b82f6]/10 to-blue-50/50 border-[#3b82f6]/40 ring-2 ring-[#3b82f6]/30 shadow-md' 
-                                  : 'bg-white/80 border-[#3b82f6]/20 hover:bg-[#3b82f6]/5 hover:border-[#3b82f6]/40' 
+                                  : 'bg-white/80 border-[#3b82f6]/20 cursor-pointer hover:bg-[#3b82f6]/5 hover:border-[#3b82f6]/40 hover:scale-105 hover:shadow-md' 
                                 : 'bg-gray-50/50 border-gray-200 opacity-40 cursor-default'
                               }`}
                             onClick={(e) => handleDateClick(day, e)}
@@ -367,7 +387,11 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                             {day && (
                               <>
                                 <div className={`text-xs font-bold mb-1  ${
-                                  isToday ? 'text-[#012851]' : 'text-gray-800 hover:text-[#012851]'
+                                  isPastDay
+                                    ? 'text-gray-400'
+                                    : isToday
+                                      ? 'text-[#012851]'
+                                      : 'text-gray-800 hover:text-[#012851]'
                                 }`}>
                                   {day.getDate()}
                                 </div>
@@ -384,7 +408,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                             e.stopPropagation();
                                             handleEventClick(event);
                                           }}
-                                          title={event.title}
+                                          title={canEditEvent(event) ? event.title : `${event.title} - csak megtekinthető`}
                                         >
                                           {truncateText(event.title, 8)}
                                         </div>
@@ -409,8 +433,9 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   {events.length > 0 && (
                     <div className="mt-12 pt-8 border-t border-[#3b82f6]/20">
                       <h4 className="text-2xl font-bold mb-6 text-[#012851]">Közelgő események</h4>
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                      <div className="space-y-4">
                         {events
+                          .filter((event) => !isPastCalendarDay(new Date(event.date)))
                           .sort((a, b) => new Date(a.date) - new Date(b.date))
                           .slice(0, 5)
                           .map((event) => {
@@ -443,8 +468,8 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                     <div className="flex gap-2 flex-shrink-0">
                                       <button
                                         onClick={() => handleEventClick(event)}
-                                        className="p-3 hover:bg-[#3b82f6]/10 rounded-2xl text-[#3b82f6] hover:text-[#012851] hover:shadow-md transition-all duration-200 border border-[#3b82f6]/30"
-                                        title="Szerkesztés"
+                                        className="p-3 rounded-2xl transition-all duration-200 border text-[#3b82f6] border-[#3b82f6]/30 hover:bg-[#3b82f6]/10 hover:text-[#012851] hover:shadow-md cursor-pointer"
+                                        title={canEditEvent(event) ? "Szerkesztés" : "Megtekintés"}
                                       >
                                         <EditIcon className="w-5 h-5" />
                                       </button>
@@ -473,7 +498,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
           <div className="p-8 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-white/50 backdrop-blur-sm flex-shrink-0">
             <button
               onClick={onClose}
-              className="w-full px-10 py-4 text-[#6b7280] hover:text-[#012851] hover:bg-[#3b82f6]/5 border border-[#6b7280]/30 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+              className="w-full px-10 py-4 bg-white text-[#012851] border border-[#3b82f6]/30 rounded-3xl transition-all duration-200 font-semibold shadow-md cursor-pointer hover:bg-[#eff6ff] hover:border-[#3b82f6]/50 hover:text-[#012851] hover:shadow-lg hover:-translate-y-0.5"
             >
               Bezárás
             </button>
@@ -488,7 +513,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
             <div className="bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white p-8 flex-shrink-0">
               <h3 className="text-2xl font-bold pb-2">
                 {editingEvent
-                  ? editingEvent.creator_id === getCurrentUserId()
+                  ? canEditEvent(editingEvent)
                     ? "Esemény szerkesztése"
                     : "Esemény megtekintése"
                   : "Új esemény"}
@@ -506,7 +531,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                   required
-                  disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
+                  disabled={editingEvent && !canEditEvent(editingEvent)}
                   className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed disabled:text-gray-500"
                 />
               </div>
@@ -521,7 +546,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                     value={eventForm.date}
                     onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
                     required
-                    disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
+                    disabled={editingEvent && !canEditEvent(editingEvent)}
                     className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -534,7 +559,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                     value={eventForm.time}
                     onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
                     required
-                    disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
+                    disabled={editingEvent && !canEditEvent(editingEvent)}
                     className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -547,7 +572,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   placeholder="Írd be a helyszínt..."
                   value={eventForm.location}
                   onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                  disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
+                  disabled={editingEvent && !canEditEvent(editingEvent)}
                   className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
                 />
               </div>
@@ -559,14 +584,14 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   placeholder="Írd be az esemény leírását..."
                   value={eventForm.description}
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                  disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
+                  disabled={editingEvent && !canEditEvent(editingEvent)}
                   className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] resize-vertical transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div className="px-10 py-8 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/70 to-white/50 backdrop-blur-sm flex gap-4 justify-end items-center flex-shrink-0">
-              {editingEvent && editingEvent.creator_id === getCurrentUserId() && (
+              {editingEvent && canEditEvent(editingEvent) && (
                 <button
                   onClick={() => handleDeleteEvent(editingEvent.id)}
                   className="px-8 py-4 text-red-600 hover:text-red-700 hover:bg-red-50/70 border border-red-200/50 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
@@ -587,7 +612,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   submitting ||
                   !eventForm.title.trim() ||
                   !eventForm.date ||
-                  (editingEvent && editingEvent.creator_id !== getCurrentUserId())
+                  (editingEvent && !canEditEvent(editingEvent))
                 }
                 className="px-10 py-4 bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white font-bold rounded-3xl hover:from-[#3b82f6]/90 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 min-w-[140px] justify-center"
               >
