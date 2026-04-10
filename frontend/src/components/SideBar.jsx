@@ -6,7 +6,8 @@ import {
   Users,
   User,
   BookOpen,
-  X,
+  ChevronLeft,
+  ChevronRight,
   LogOut,
   Timer,
 } from "lucide-react";
@@ -15,13 +16,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleNavigationClick = (pageId) => {
-    if (!isExpanded) {
-      setIsExpanded(true);
-      // Delay the page change to allow expansion animation
-      setTimeout(() => onPageChange(pageId), 150);
-    } else {
-      onPageChange(pageId);
-    }
+    onPageChange(pageId);
   };
 
   const navigationItems = [
@@ -67,17 +62,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
         )}
       >
         {/* Header with Logo */}
-        <div className="p-6 flex flex-col items-center relative">
-          {/* Close button when expanded */}
-          {isExpanded && (
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-4 right-4 w-8 h-8 bg-sidebar-accent/50 hover:bg-sidebar-accent rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-            >
-              <X className="w-4 h-4 text-sidebar-foreground" />
-            </button>
-          )}
-
+        <div className="p-6 flex flex-col items-center">
           <div className="w-12 h-12 bg-sidebar-primary rounded-full flex items-center justify-center shadow-lg">
             <BookOpen className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
@@ -91,6 +76,29 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
               </p>
             </div>
           )}
+        </div>
+
+        <div
+          className={cn(
+            "px-4 pb-4",
+            isExpanded ? "flex justify-end" : "flex justify-center"
+          )}
+        >
+          <button
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className={cn(
+              "h-9 rounded-full bg-sidebar-accent/60 hover:bg-sidebar-accent border border-white/10 flex items-center justify-center transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer",
+              isExpanded ? "w-9" : "w-10"
+            )}
+            aria-label={isExpanded ? "Navigációs sáv összecsukása" : "Navigációs sáv megnyitása"}
+            title={isExpanded ? "Navigációs sáv összecsukása" : "Navigációs sáv megnyitása"}
+          >
+            {isExpanded ? (
+              <ChevronLeft className="w-4 h-4 text-sidebar-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-sidebar-foreground" />
+            )}
+          </button>
         </div>
 
         {/* Navigation */}
@@ -111,7 +119,9 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
                         ? "w-full px-4 py-3 justify-start rounded-xl hover:-translate-y-0.5 hover:border-sidebar-primary/40"
                         : "w-12 h-12 justify-center mx-auto rounded-full hover:scale-110",
                       isActive
-                        ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30 scale-105"
+                        ? isExpanded
+                          ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30 scale-105"
+                          : "bg-sidebar-accent/95 border border-sidebar-primary/35 shadow-md scale-110"
                         : "bg-sidebar-accent border border-transparent hover:bg-sidebar-primary/80"
                     )}
                   >
@@ -120,7 +130,9 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
                         "transition-colors duration-300 flex-shrink-0",
                         "w-5 h-5",
                         isActive
-                          ? "text-sidebar-primary-foreground"
+                          ? isExpanded
+                            ? "text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground"
                           : "text-sidebar-accent-foreground group-hover:text-sidebar-primary-foreground"
                       )}
                     />
@@ -147,10 +159,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
 
                     {/* Active indicator */}
                     {isActive && !isExpanded && (
-                      <>
-                        <div className="absolute inset-0 rounded-full bg-sidebar-primary opacity-20 animate-pulse" />
-                        <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-1 h-6 bg-sidebar-primary rounded-l-full" />
-                      </>
+                      <div className="absolute inset-0 rounded-full border border-sidebar-primary/30" />
                     )}
 
                     {/* Active indicator for expanded state */}
