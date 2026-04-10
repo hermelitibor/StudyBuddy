@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
+} from "./ui/Dialog";
 import { groupService } from "../service/api";
 import { eventService } from "../service/api"; 
 

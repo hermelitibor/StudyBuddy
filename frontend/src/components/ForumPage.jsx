@@ -27,7 +27,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "./ui/dialog";
+} from "./ui/Dialog";
 import Calendar from "./ui/calendar";
 import { forumService, eventService, groupService, authService } from "../service/api";
 
